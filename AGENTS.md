@@ -32,7 +32,9 @@ This recipe owns the **podcast episode content model** and nothing above it.
 
 - The `podcast` content type, its fields, and the four field storages this recipe
   owns: `field_audio`, `field_audio_url`, `field_duration`, `field_episode_number`.
-- Form and view displays for the episode, and their Canvas content templates.
+- Form and view displays for the episode, and the Canvas content template for the
+  full view mode, built on Vartheme BS5. Keep it: Varbase Content Base otherwise
+  creates an empty full-view template and every episode page renders blank.
 - `views.view.podcasts` and its block and feed displays.
 - SEO plumbing for episodes: Pathauto pattern, Simple Sitemap bundle settings.
 - Editorial workflow and role permissions for `podcast`.

@@ -47,8 +47,21 @@ site template, which may serve it from a Canvas page; shipping a view page at
 - **Full**: the episode page
 - **Card** and **Text card medium**: listing and rail displays
 
-Canvas content templates are shipped for each, so the episode renders through the
-site's component library rather than through field markup.
+The recipe ships a Canvas content template for the **full** view mode, built from
+Vartheme BS5 components, so an episode page renders its title, date, duration,
+cover art, audio player, description and transcript on Varbase Starter and on any
+site using the base theme. Vartheme BS5 has no audio component, so each player is
+its video component, which plays audio files. A self-hosted file and a remote URL
+get separate players, and each renders nothing when its field is empty.
+
+The full template has to ship. Varbase Content Base creates an empty full-view
+template for every new content type, and an empty template renders a blank
+episode page.
+
+**Card** and **Text card medium** render through their view displays. A site
+template with its own theme takes over the full template the same way it does for
+the other base recipes: `repointComponentTreeToTheme`, or a `simpleConfigUpdate` of
+`component_tree` for a designed layout.
 
 ### SEO
 - XML sitemap inclusion via Simple Sitemap bundle settings
