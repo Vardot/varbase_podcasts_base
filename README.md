@@ -1,0 +1,74 @@
+[![Varbase](https://raw.githubusercontent.com/Vardot/varbase/11.0.x/images/varbase-logo.png)](https://www.drupal.org/project/varbase)
+
+# Varbase Podcasts Base
+[![pipeline status](https://git.drupalcode.org/project/varbase_podcasts_base/badges/1.0.x/pipeline.svg)](https://git.drupalcode.org/project/varbase_podcasts_base/-/pipelines)
+[![Varbase Podcasts Base](https://img.shields.io/badge/Varbase%20Podcasts%20Base-1.0.0-0d6efc?labelColor=001d38&style=flat-square)](https://git.drupalcode.org/project/varbase_podcasts_base/-/pipelines?ref=1.0.0)
+[![Automated Functional Testing](https://git.drupalcode.org/project/varbase_project/badges/11.0.x/pipeline.svg)](https://git.drupalcode.org/project/varbase_project/-/pipelines)
+
+A recipe to provide a podcast episode content type, listing view, and related configuration for Varbase. Use Podcasts to publish audio episodes with a host, duration, episode number and transcript in the Podcasts section of the site.
+
+This recipe builds on top of the Varbase Content Base, Media Base, SEO Base, and Workflow Base recipes, extending them with podcast-specific content structure, views, and SEO configuration.
+
+## Features
+
+### Podcast Content Type
+- **Podcast** (`podcast`): A content type for podcast episodes with the following fields:
+  - Title
+  - Description (short summary text)
+  - Featured Image (media reference, used as episode cover art)
+  - Content (long text with format, used for the episode transcript)
+  - Audio (file upload, for a self-hosted episode file)
+  - Audio URL (link, for an episode hosted on a podcast platform or CDN)
+  - Duration (plain text, for example `44 Mins`)
+  - Episode Number (integer, rendered as the episode eyebrow)
+  - Tags (taxonomy reference with autocomplete via Tagify)
+
+### Audio delivery
+An episode carries **either** a self-hosted file (`field_audio`) **or** a remote URL
+(`field_audio_url`). Both are optional so an episode can be drafted before its audio
+is ready, and the theme decides which player to render. A site that publishes only
+to a hosting platform never has to upload a file, and a site that self-hosts never
+has to keep a second URL in sync.
+
+### Views
+- **Podcasts** (`podcasts`): A views listing with several displays:
+  - **All podcast episodes**: paginated listing with Better Exposed Filters
+  - **Latest podcast episodes**: block for the most recent episodes
+  - **Related podcast episodes**: block for episodes sharing tags, used for the
+    "More Episodes" rail on an episode page
+  - **Featured podcast episodes**: block for promoted episodes
+  - **RSS Feed**: podcast content feed
+
+There is deliberately **no page display**. The podcasts landing page belongs to the
+site template, which may serve it from a Canvas page; shipping a view page at
+`/podcasts` here would collide with it.
+
+### View modes
+- **Full**: the episode page
+- **Card** and **Text card medium**: listing and rail displays
+
+Canvas content templates are shipped for each, so the episode renders through the
+site's component library rather than through field markup.
+
+### SEO
+- XML sitemap inclusion via Simple Sitemap bundle settings
+- Pathauto pattern for episode URLs
+- Metatag and Yoast SEO support inherited from Varbase SEO Base
+
+## Requirements
+
+- Varbase Content Base
+- Varbase Media Base
+- Varbase SEO Base
+- Varbase Workflow Base
+
+## Installation
+
+```bash
+composer require drupal/varbase_podcasts_base
+drush recipe recipes/varbase_podcasts_base
+```
+
+## Maintainers
+
+- [Vardot](https://www.drupal.org/vardot)

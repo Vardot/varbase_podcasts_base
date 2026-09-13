@@ -1,0 +1,61 @@
+name: Varbase Podcasts Base
+description: A recipe to provide a podcast episode content type, listing view, and related configuration for Varbase. Use Podcasts to publish audio episodes with a host, duration, episode number and transcript in the Podcasts section of the site.
+type: Varbase Podcasts
+recipes:
+  - varbase_content_base
+  - varbase_media_base
+  - varbase_seo_base
+  - varbase_workflow_base
+install:
+  - selective_better_exposed_filters
+  - webshare
+config:
+  strict: false
+  actions:
+    user.role.anonymous:
+      grantPermissions:
+        - access_unpublished node podcast
+    user.role.authenticated:
+      grantPermissions:
+        - access_unpublished node podcast
+    user.role.content_editor:
+      grantPermissions:
+        - create podcast content
+        - delete any podcast content
+        - delete own podcast content
+        - delete podcast revisions
+        - edit any podcast content
+        - edit own podcast content
+        - revert podcast revisions
+        - view podcast revisions
+    user.role.content_admin:
+      grantPermissions:
+        - create podcast content
+        - delete any podcast content
+        - delete own podcast content
+        - delete podcast revisions
+        - edit any podcast content
+        - edit own podcast content
+        - revert podcast revisions
+        - view podcast revisions
+    user.role.seo_admin:
+      grantPermissions:
+        - create podcast content
+        - delete any podcast content
+        - delete own podcast content
+        - edit any podcast content
+        - edit own podcast content
+        - view podcast revisions
+    user.role.site_admin:
+      grantPermissions:
+        - create podcast content
+        - delete any podcast content
+        - delete own podcast content
+        - delete podcast revisions
+        - edit any podcast content
+        - edit own podcast content
+        - revert podcast revisions
+        - view podcast revisions
+    workflows.workflow.varbase_editorial_workflow:
+      addNodeTypes:
+        - podcast

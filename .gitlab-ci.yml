@@ -1,0 +1,90 @@
+################################################################################
+# Build + validate GitLab CI for the Varbase Podcasts Base recipe.
+#
+# This pipeline validates what this repository actually owns: the composer
+# manifest, the recipe manifest and every configuration file it ships.
+#
+# It deliberately does NOT build a Varbase site and run the functional suite
+# yet. That job belongs here once the recipe has a released dependency set to
+# resolve against; until then it would fail for reasons that have nothing to do
+# with this recipe. Add it in a follow-up, modelled on the Varbase News Base
+# pipeline.
+################################################################################
+
+stages:
+  - validate
+
+variables:
+  COMPOSER_ALLOW_SUPERUSER: "1"
+  COMPOSER_MEMORY_LIMIT: "-1"
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+# The composer manifest has to be installable, and its constraints have to be
+# the ones the recipe actually depends on.
+composer:
+  stage: validate
+  image: composer:2
+  script:
+    - composer validate --no-check-all --no-check-publish
+  rules:
+    - when: always
+
+# Every YAML file the recipe ships has to parse. A recipe that ships a broken
+# config file fails at apply time on someone else's site, which is the worst
+# place to find out.
+yaml:
+  stage: validate
+  image: python:3.12-slim
+  before_script:
+    - pip install --no-cache-dir pyyaml
+  script:
+    - |
+      python - <<'PY'
+      import glob, sys, yaml
+      failed = []
+      files = ['recipe.yml'] + sorted(glob.glob('config/**/*.yml', recursive=True))
+      for path in files:
+          try:
+              yaml.safe_load(open(path))
+          except Exception as error:
+              failed.append((path, error))
+      for path, error in failed:
+          print(f'INVALID {path}: {error}')
+      print(f'{len(files)} YAML files checked, {len(failed)} invalid')
+      sys.exit(1 if failed else 0)
+      PY
+  rules:
+    - when: always
+
+# The recipe manifest has to declare the keys a Drupal recipe needs, and every
+# config action has to name a config file this recipe or a dependency provides.
+recipe:
+  stage: validate
+  image: python:3.12-slim
+  before_script:
+    - pip install --no-cache-dir pyyaml
+  script:
+    - |
+      python - <<'PY'
+      import sys, yaml
+      recipe = yaml.safe_load(open('recipe.yml'))
+      problems = []
+      for key in ('name', 'description', 'type'):
+          if not recipe.get(key):
+              problems.append(f'recipe.yml is missing "{key}"')
+      if not isinstance(recipe.get('recipes', []), list):
+          problems.append('recipe.yml "recipes" must be a list')
+      if not isinstance(recipe.get('install', []), list):
+          problems.append('recipe.yml "install" must be a list')
+      for problem in problems:
+          print(problem)
+      print(f'recipe.yml checked, {len(problems)} problems')
+      sys.exit(1 if problems else 0)
+      PY
+  rules:
+    - when: always
