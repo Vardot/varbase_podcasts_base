@@ -123,7 +123,7 @@ display:
           plugin_id: text
           empty: true
           content:
-            value: <p>There are no news posts yet.</p>
+            value: <p>There are no podcast episodes yet.</p>
             format: full_html
           tokenize: false
       sorts:
@@ -381,23 +381,6 @@ display:
                   is_secondary: false
                   hide_label: true
               field_tags_target_id:
-                plugin_id: default
-                advanced:
-                  sort_options: false
-                  rewrite:
-                    filter_rewrite_values: ''
-                    filter_rewrite_values_key: false
-                  collapsible: false
-                  collapsible_disable_automatic_open: false
-                  is_secondary: false
-                  hide_label: false
-                options_show_only_used: true
-                options_show_only_used_filtered: false
-                options_hide_when_empty: true
-                select_all_none: false
-                select_all_none_nested: false
-                display_inline: false
-              field_news_categories_target_id:
                 plugin_id: default
                 advanced:
                   sort_options: false
@@ -672,7 +655,7 @@ display:
           plugin_id: text
           empty: true
           content:
-            value: <h2 class="visually-hidden">All news posts</h2>
+            value: <h2 class="visually-hidden">All podcast episodes</h2>
             format: code_html
           tokenize: false
         result:
@@ -905,7 +888,7 @@ display:
     display_plugin: feed
     position: 6
     display_options:
-      enabled: false
+      enabled: true
       fields:
         title:
           id: title
@@ -1302,7 +1285,7 @@ display:
         type: rss
         options:
           uses_fields: false
-          description: Subscribe to our RSS feed to stay up to date with our latest news posts.
+          description: Subscribe to our RSS feed to stay up to date with our latest podcast episodes.
       row:
         type: rss_fields
         options:
@@ -1398,7 +1381,7 @@ display:
         metatag_display_extender:
           metatags: {}
           tokenize: false
-      block_description: Featured news posts
+      block_description: Featured podcast episodes
     cache_metadata:
       max-age: -1
       contexts:
