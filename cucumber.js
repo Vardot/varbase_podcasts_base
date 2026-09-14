@@ -1,12 +1,12 @@
 // cucumber-js configuration for the Varbase Podcasts Base functional testing suite.
 //
-// Drives the news recipe through the browser (Playwright + Cucumber-js via
+// Drives the podcasts recipe through the browser (Playwright + Cucumber-js via
 // varbase-e2e >= 2.0.4). Feature files live flat in tests/features/ — one recipe,
 // no per-feature subfolders.
 //   yarn test                # all features (tests/features/*.feature)
 //   yarn test:chromium       # force chromium
 //   yarn test:headed         # headed debug run
-//   FEATURES="tests/features/03-01-news-listing.feature" yarn test:chromium
+//   FEATURES="tests/features/03-01-podcasts-listing.feature" yarn test:chromium
 //
 // Point the suite at a running site with LAUNCH_URL (falls back to
 // DDEV_PRIMARY_URL). Reports land in tests/reports/. Disable the auto HTML hook
@@ -27,10 +27,10 @@ module.exports = {
     requireModule: ['tsx/cjs'],
     require: [
       'node_modules/@vardot/varbase-e2e/tests/step-definitions/**/*.js', // Varbase E2E core step definitions.
-      'tests/step-definitions/**/*.js',                         // News Base custom step definitions.
+      'tests/step-definitions/**/*.js',                         // Podcasts Base custom step definitions.
     ],
     // FEATURES lets you run a single feature file (e.g.
-    // FEATURES="tests/features/03-01-news-listing.feature"); unset runs the
+    // FEATURES="tests/features/03-01-podcasts-listing.feature"); unset runs the
     // whole flat suite.
     paths: [process.env.FEATURES || 'tests/features/*.feature'],
     format: [
