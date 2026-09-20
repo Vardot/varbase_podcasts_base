@@ -4,7 +4,6 @@ dependencies:
   module:
     - menu_ui
     - scheduler
-    - search_api_exclude
 third_party_settings:
   scheduler:
     expand_fieldset: when_required
@@ -22,8 +21,6 @@ third_party_settings:
   menu_ui:
     available_menus: {  }
     parent: ''
-  search_api_exclude:
-    enabled: true
 name: 'Podcast episode'
 type: podcast
 description: 'Use <em>Podcast episode</em> to publish an audio episode with its cover art, show notes and either an uploaded audio file or a link to audio hosted elsewhere.'
