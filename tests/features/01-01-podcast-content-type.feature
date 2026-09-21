@@ -14,20 +14,21 @@ Feature: Podcasts Base - Podcast episode content type
       And I should see "Summary"
       And I should see "Cover art"
       And I should see "Show notes"
-      And I should see "Audio file"
-      And I should see "Audio URL"
+      And I should see "Audio"
       And I should see "Duration"
       And I should see "Episode number"
       And I should see "Tags"
       And "#edit-title-0-value" should be visible within 10 seconds
 
   @check @local @development @staging @production
-  Scenario: The Audio tab exposes the four audio-model fields as editable widgets
+  Scenario: The Audio tab offers the Audio field as a media reference, not a file upload or a link
     Given I am a logged in user with the "Content editor" user
      When I go to "/node/add/podcast"
       And wait
       And I open the "Audio" tab on the podcast form
-     Then "input[name^='files[field_audio']" should be visible within 10 seconds
-      And "#edit-field-audio-url-0-uri" should be visible within 10 seconds
+     Then "#edit-field-audio-open-button" should be visible within 10 seconds
+      And "#edit-field-audio-open-button" should have value "Add media"
+      And "input[name^='files[field_audio']" should not be visible
+      And "#edit-field-audio-url-0-uri" should not be visible
       And "#edit-field-duration-0-value" should be visible within 10 seconds
       And "#edit-field-episode-number-0-value" should be visible within 10 seconds

@@ -7,7 +7,7 @@ _meta:
   depends:
     9c2c217c-bcef-5f55-a45a-75ed0b7a011a: media
     ea7d56c9-c038-5922-a05d-4d7bcd77e6f2: taxonomy_term
-    f104d55f-1bd6-5d9b-82c7-7df4fa126460: file
+    3f1b0c2e-8a44-5b17-9c6d-1e2f3a4b5c6d: media
 default:
   revision_uid:
     -
@@ -67,5 +67,4 @@ default:
       entity: ea7d56c9-c038-5922-a05d-4d7bcd77e6f2
   field_audio:
     -
-      description: ''
-      entity: f104d55f-1bd6-5d9b-82c7-7df4fa126460
+      entity: 3f1b0c2e-8a44-5b17-9c6d-1e2f3a4b5c6d

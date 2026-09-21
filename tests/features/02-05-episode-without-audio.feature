@@ -4,7 +4,7 @@ Feature: Podcasts Base - An episode with no audio at all
       So that the show notes and cover art can be prepared ahead of the audio.
 
   @check @local @development @staging @production
-  Scenario: A Content editor saves an episode with neither an audio file nor an audio URL
+  Scenario: A Content editor saves an episode with no audio media referenced
     Given I am a logged in user with the "Content editor" user
      When I go to "/node/add/podcast"
       And wait

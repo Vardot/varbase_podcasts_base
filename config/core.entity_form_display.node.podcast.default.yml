@@ -3,7 +3,6 @@ status: true
 dependencies:
   config:
     - field.field.node.podcast.field_audio
-    - field.field.node.podcast.field_audio_url
     - field.field.node.podcast.field_content
     - field.field.node.podcast.field_description
     - field.field.node.podcast.field_duration
@@ -14,8 +13,6 @@ dependencies:
   module:
     - content_moderation
     - field_group
-    - file
-    - link
     - media_library
     - path
     - tagify
@@ -45,7 +42,6 @@ third_party_settings:
     group_audio:
       children:
         - field_audio
-        - field_audio_url
         - field_duration
         - field_episode_number
       label: Audio
@@ -146,19 +142,11 @@ content:
     settings: {  }
     third_party_settings: {  }
   field_audio:
-    type: file_generic
+    type: media_library_widget
     weight: 0
     region: content
     settings:
-      progress_indicator: throbber
-    third_party_settings: {  }
-  field_audio_url:
-    type: link_default
-    weight: 1
-    region: content
-    settings:
-      placeholder_url: ''
-      placeholder_title: ''
+      media_types: {  }
     third_party_settings: {  }
   field_content:
     type: text_textarea

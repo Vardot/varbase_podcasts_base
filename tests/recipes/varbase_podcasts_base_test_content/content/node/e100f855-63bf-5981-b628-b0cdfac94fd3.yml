@@ -5,6 +5,7 @@ _meta:
   bundle: podcast
   default_langcode: en
   depends:
+    3f1b0c2e-8a44-5b17-9c6d-1e2f3a4b5c6d: media
     9c2c217c-bcef-5f55-a45a-75ed0b7a011a: media
     ea7d56c9-c038-5922-a05d-4d7bcd77e6f2: taxonomy_term
 default:
@@ -64,8 +65,6 @@ default:
   field_tags:
     -
       entity: ea7d56c9-c038-5922-a05d-4d7bcd77e6f2
-  field_audio_url:
+  field_audio:
     -
-      uri: 'https://example.com/podcasts/varbase-example-episode-05.mp3'
-      title: null
-      options: {  }
+      entity: 3f1b0c2e-8a44-5b17-9c6d-1e2f3a4b5c6d

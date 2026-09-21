@@ -14,12 +14,12 @@ dependencies:
     - core.entity_view_mode.node.full
     - field.field.media.image.field_media_image
     - field.field.node.podcast.field_audio
-    - field.field.node.podcast.field_audio_url
     - field.field.node.podcast.field_content
     - field.field.node.podcast.field_description
     - field.field.node.podcast.field_duration
     - field.field.node.podcast.field_featured_image
     - image.style.canvas_parametrized_width
+    - media.type.audio
     - media.type.image
     - node.type.podcast
   module:
@@ -85,16 +85,7 @@ component_tree:
     inputs:
       video_file:
         sourceType: entity-field
-        expression: 'ℹ︎␜entity:node:podcast␝field_audio␞␟entity␜␜entity:file␝uri␞␟{src↠url}'
-      ratio: 21x9
-  427c8a08-9f9c-5203-a9d5-16f39973de48:
-    uuid: 427c8a08-9f9c-5203-a9d5-16f39973de48
-    component_id: sdc.vartheme_bs5.video
-    component_version: 854f1e9956fee88d
-    inputs:
-      video_file:
-        sourceType: entity-field
-        expression: 'ℹ︎␜entity:node:podcast␝field_audio_url␞␟{src↠uri}'
+        expression: 'ℹ︎␜entity:node:podcast␝field_audio␞0␟entity␜␜entity:media:audio␝field_media_audio_file␞␟entity␜␜entity:file␝uri␞␟{src↠url}'
       ratio: 21x9
   0d745a12-759d-57ca-886b-3e29a2f8efa9:
     uuid: 0d745a12-759d-57ca-886b-3e29a2f8efa9

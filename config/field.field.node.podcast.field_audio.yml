@@ -3,24 +3,30 @@ status: true
 dependencies:
   config:
     - field.storage.node.field_audio
+    - media.type.audio
+    - media.type.remote_audio
     - node.type.podcast
   module:
-    - file
+    - media
 id: node.podcast.field_audio
 field_name: field_audio
 entity_type: node
 bundle: podcast
-label: 'Audio file'
-description: 'Upload the episode audio when it is hosted on this site. Leave empty and use Audio URL instead when the audio is hosted elsewhere.'
+label: Audio
+description: 'The episode audio: an uploaded audio file, or audio hosted on SoundCloud, Spotify or Apple Podcasts.'
 required: false
-translatable: true
+translatable: false
 default_value: {  }
 default_value_callback: ''
 settings:
-  handler: 'default:file'
-  handler_settings: {  }
-  file_directory: 'audio/[date:custom:Y]-[date:custom:m]'
-  file_extensions: 'mp3 m4a ogg wav'
-  max_filesize: ''
-  description_field: false
-field_type: file
+  handler: 'default:media'
+  handler_settings:
+    target_bundles:
+      audio: audio
+      remote_audio: remote_audio
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

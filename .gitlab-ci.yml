@@ -270,10 +270,10 @@ recipe:
       seed_user "SEO admin"      "test.seo_admin@vardot.com"      "seo_admin"
       seed_user "Site admin"     "test.site_admin@vardot.com"     "site_admin"
       seed_user "Super admin"    "test.super_admin@vardot.com"    "administrator"
-    # Seed the deterministic test content (15 example episodes — 8 with a remote
-    # audio URL, 4 with an uploaded audio file, 3 with no audio — one shared tag
-    # and one cover-art media item) that the listing, pager, filter, related and
-    # audio scenarios assert against. A testing-only recipe applied with `drush
+    # Seed the deterministic test content (15 example episodes — 12 referencing
+    # one uploaded Audio media item, 3 with no audio — one shared tag and one
+    # cover-art media item) that the listing, pager, filter, related and audio
+    # scenarios assert against. A testing-only recipe applied with `drush
     # recipe`, not a PHP fixture.
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" recipe "$CI_PROJECT_DIR/tests/recipes/varbase_podcasts_base_test_content"
     # Provision the listing and the related display — HARNESS ONLY. The recipe
@@ -369,4 +369,6 @@ recipe:
         fi
       done
     - cd "$CI_PROJECT_DIR"
-    - BROWSER=chromium node ./node_modules/@cucumber/cucumber/bin/cucumber.js --config cucumber.js --tags "not @wip" --retry 1
+    # @external posts a real provider URL to SoundCloud's oEmbed endpoint, which
+    # a network-isolated runner cannot reach — run it locally, not here.
+    - BROWSER=chromium node ./node_modules/@cucumber/cucumber/bin/cucumber.js --config cucumber.js --tags "not @wip and not @external" --retry 1

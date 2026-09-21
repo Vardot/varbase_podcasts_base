@@ -4,7 +4,6 @@ dependencies:
   config:
   - core.entity_view_mode.node.full
   - field.field.node.podcast.field_audio
-  - field.field.node.podcast.field_audio_url
   - field.field.node.podcast.field_content
   - field.field.node.podcast.field_description
   - field.field.node.podcast.field_duration
@@ -13,8 +12,6 @@ dependencies:
   - field.field.node.podcast.field_tags
   - node.type.podcast
   module:
-  - file
-  - link
   - options
   - text
   - user
@@ -57,27 +54,13 @@ content:
     weight: 3
     region: content
   field_audio:
-    type: file_audio
+    type: entity_reference_entity_view
     label: hidden
     settings:
-      controls: true
-      autoplay: false
-      loop: false
-      multiple_file_display_type: tags
+      view_mode: default
+      link: false
     third_party_settings: {}
     weight: 4
-    region: content
-  field_audio_url:
-    type: link
-    label: inline
-    settings:
-      trim_length: 80
-      url_only: false
-      url_plain: false
-      rel: ''
-      target: ''
-    third_party_settings: {}
-    weight: 5
     region: content
   field_content:
     type: text_default

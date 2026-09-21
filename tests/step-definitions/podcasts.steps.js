@@ -8,14 +8,13 @@ const { smartSettle, friendly } = require('@vardot/varbase-e2e/tests/step-defini
 // -----------------------------------------------------------------------------
 // Custom steps for the Varbase Podcasts Base recipe.
 //
-// The generic varbase-e2e steps drive the Title, Summary, Duration and Audio
-// URL fields ("I fill in ..."), so those are not re-implemented here. What IS
-// here is what only this recipe needs:
+// The generic varbase-e2e steps drive the Title, Summary, Duration and Episode
+// number fields ("I fill in ..."), so those are not re-implemented here. What
+// IS here is what only this recipe needs:
 //
 //   - the episode form's field-group tabs — Audio, Categorization and the rest
 //     render closed, and a field inside a closed tab is not fillable;
-//   - the required Cover art media-library widget (an AJAX modal picker);
-//   - the Audio file upload (a file_generic widget, an AJAX upload);
+//   - the Cover art and Audio media-library widgets (AJAX modal pickers);
 //   - save / edit / delete, so every authoring scenario stays independent and
 //     removes what it creates;
 //   - the listing result summary and the related-episodes assertion.
@@ -103,9 +102,9 @@ async function currentEpisodeNid(page) {
  *
  * The Podcast episode form groups its fields into horizontal tabs — General
  * (open), Audio, Categorization, SEO and Options (all closed). Playwright will
- * not fill a field inside a closed tab, so Duration, Episode number, Audio file
- * and Audio URL need their tab opened first. Handles both renderings the
- * field_group tabs element can take: a tab link, and a plain <details>.
+ * not fill a field inside a closed tab, so Audio, Duration and Episode number
+ * need their tab opened first. Handles both renderings the field_group tabs
+ * element can take: a tab link, and a plain <details>.
  *
  * Example #1: When I open the "Audio" tab on the podcast form
  * Example #2: And I open the "Audio" tab on the podcast form
@@ -179,16 +178,134 @@ When(/^(?:I |we )*save the podcast episode$/, async function () {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Media library steps.
+//
+// field_audio and field_featured_image are both media_library_widget fields, so
+// the modal is driven through one set of helpers. The Audio field targets two
+// bundles — `audio` (an uploaded file) and `remote_audio` (an oEmbed URL from a
+// podcast platform) — which is why the type menu is something the suite checks
+// rather than something it skips past.
+// ---------------------------------------------------------------------------
+
+const MEDIA_ITEM = [
+  '.media-library-view .js-media-library-item input[type="checkbox"]',
+  '.media-library-view .media-library-item input[type="checkbox"]',
+  '.media-library-widget-modal .media-library-item input[type="checkbox"]',
+].join(', ');
+
+const MEDIA_MODAL = '.media-library-widget-modal, .ui-dialog .media-library-view, [role="dialog"] .media-library-view';
+
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * The media_library widget fieldset carrying the given field label.
+ */
+function mediaWidget(page, label) {
+  return page
+    .locator('fieldset.js-media-library-widget')
+    // Claro puts the label straight in the legend; Gin wraps it in a label.
+    .filter({ has: page.locator('legend, legend label').filter({ hasText: new RegExp(`^\\s*${escapeRe(label)}\\s*$`) }) })
+    .first();
+}
+
+/**
+ * Click a media_library widget's "Add media" button and wait for the modal.
+ *
+ * A real Playwright click, not a synthetic in-page one: only the former fires
+ * the Drupal AJAX that builds the dialog.
+ */
+async function openMediaLibrary(page, label, budget) {
+  const widget = mediaWidget(page, label);
+  if (!(await widget.count())) {
+    const labels = await page.locator('fieldset.js-media-library-widget legend').allTextContents();
+    throw friendly(
+      `No media library widget labelled "${label}" is on this form.`,
+      `Media library widgets present: ${labels.map((s) => s.trim()).filter(Boolean).join(', ') || 'none'}.`
+    );
+  }
+  const openButton = widget.locator('.js-media-library-open-button, input[id$="-open-button"], button[id$="-open-button"]').first();
+  await openButton.waitFor({ state: 'visible', timeout: 20000 });
+  // Drupal disables every form submit while an AJAX request is in flight, so an
+  // unsettled behaviour leaves this button disabled and the click times out.
+  try {
+    await openButton.locator('xpath=.').waitFor({ state: 'attached', timeout: 1000 });
+    await page.waitForFunction(
+      (id) => { const el = document.getElementById(id); return el && !el.disabled; },
+      await openButton.getAttribute('id'),
+      { timeout: 30000 },
+    );
+  } catch {
+    const errors = await page.evaluate(() =>
+      [...document.querySelectorAll('.messages--error')].map((e) => e.textContent.replace(/\s+/g, ' ').trim()).join(' | '));
+    throw friendly(
+      `The "${label}" media library button stayed disabled, so Drupal never finished an AJAX request on this form.`,
+      errors ? `Form errors: ${errors}` : 'No form error was shown — check the browser console for a failed AJAX response.'
+    );
+  }
+  await openButton.click();
+  await page.locator(MEDIA_MODAL).first().waitFor({ state: 'visible', timeout: 30000 });
+  await smartSettle(page, budget);
+}
+
+/**
+ * The media type menu links offered by the open media library, by label.
+ */
+async function mediaLibraryTypes(page) {
+  const labels = await page
+    .locator('.js-media-library-menu a, .media-library-menu a, .media-library-menu__link')
+    .allTextContents();
+  // Links read "Show Audio media (active tab)" — reduce that to the type name.
+  return labels
+    .map((s) => s.replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim())
+    .map((s) => s.replace(/^Show\s+/i, '').replace(/\s+media$/i, '').trim())
+    .filter(Boolean);
+}
+
+/**
+ * Switch the open media library to the named media type tab, when one exists.
+ */
+async function switchMediaType(page, type, budget) {
+  const slug = type.toLowerCase().replace(/\s+/g, '-');
+  const tab = page
+    .locator(`.media-library-menu-${slug} a, li.media-library-menu-${slug} a, .media-library-menu__item.media-library-menu-${slug} a`)
+    .first();
+  if (!(await tab.count())) return false;
+  await tab.click();
+  await smartSettle(page, budget);
+  await page.locator(MEDIA_ITEM).first().waitFor({ state: 'attached', timeout: 10000 }).catch(() => {});
+  return true;
+}
+
+/**
+ * Select the first item the open media library lists and insert it.
+ */
+async function insertFirstMediaItem(page, budget, what) {
+  const firstItem = page.locator(MEDIA_ITEM).first();
+  await firstItem.waitFor({ state: 'attached', timeout: 30000 }).catch(async () => {
+    throw friendly(
+      `The media library opened but lists no selectable ${what}.`,
+      `Media type tabs offered: ${(await mediaLibraryTypes(page)).join(', ') || 'none'}. Ensure the site carries at least one such media item.`
+    );
+  });
+  await firstItem.check({ force: true });
+  await smartSettle(page, budget);
+
+  const insert = page.locator(
+    '.ui-dialog-buttonpane button:has-text("Insert selected"), .media-library-widget-modal button:has-text("Insert selected"), [role="dialog"] button:has-text("Insert selected")'
+  ).first();
+  await insert.waitFor({ state: 'visible', timeout: 20000 });
+  await insert.click();
+  await smartSettle(page, budget);
+}
+
 /**
  * Add the first available image to the episode's required "Cover art" field,
  * from the existing media library.
  *
- * Drives the media_library widget's real modal: a Playwright click on "Add
- * media" (a synthetic in-page click does not fire Drupal's AJAX), waits for the
- * media library view, selects the first media item and inserts it, then asserts
- * the widget shows the selected item. Picking the FIRST item rather than one by
- * name keeps the scenarios independent of which media the site happens to
- * carry — Cover art is required, so every authoring scenario needs one.
+ * Picking the FIRST item rather than one by name keeps the scenarios
+ * independent of which media the site happens to carry — Cover art is
+ * required, so every authoring scenario needs one.
  *
  * Example #1: When I add the first available cover art from the media library
  * Example #2: And I add the first available cover art from the media library
@@ -201,103 +318,137 @@ When(/^(?:I |we )*add the first available cover art from the media library$/, as
   const budget = budgetOf(this);
   await dismissAutosaveDialog(this.page, budget);
 
-  // A real Playwright click fires the Drupal AJAX that opens the modal.
-  const openButton = this.page.locator(
-    '#edit-field-featured-image-open-button, [data-drupal-selector="edit-field-featured-image-open-button"], .field--name-field-featured-image .media-library-open-button, input[id*="field-featured-image-open-button"], button[id*="field-featured-image-open-button"]'
-  ).first();
-  await openButton.waitFor({ state: 'visible', timeout: 20000 });
-  await openButton.click();
+  await openMediaLibrary(this.page, 'Cover art', budget);
 
-  // Wait for the media library modal dialog.
-  await this.page.locator('.media-library-widget-modal, .ui-dialog .media-library-view, [role="dialog"] .media-library-view')
-    .first().waitFor({ state: 'visible', timeout: 30000 });
+  // field_featured_image restricts no target bundle, so the library lists every
+  // media type and opens on whichever comes first — Audio, since the test
+  // content carries an audio media item. Switch to Image unconditionally: a
+  // "first available item" that is an audio file silently becomes the cover
+  // art, fills the field's single slot, and disables the Add media button.
+  await switchMediaType(this.page, 'Image', budget);
+  await insertFirstMediaItem(this.page, budget, 'image to add as cover art');
 
-  // The library opens on whichever media type comes first, which is not
-  // necessarily Image — an empty tab renders "No media available" and no
-  // selectable item. Switch to the Image tab when one is offered.
-  const itemSelector = '.media-library-view .js-media-library-item input[type="checkbox"], .media-library-view .media-library-item input[type="checkbox"], .media-library-widget-modal .media-library-item input[type="checkbox"]';
-  if (!(await this.page.locator(itemSelector).count())) {
-    // Target the Image tab by its own menu-item class rather than by link text:
-    // the link carries visually-hidden state text, so a text match is unreliable.
-    const imageTab = this.page.locator('.media-library-menu-image a, li.media-library-menu-image a, .media-library-menu__item.media-library-menu-image a').first();
-    if (await imageTab.count()) {
-      await imageTab.click();
-      await smartSettle(this.page, budget);
-      await this.page.locator(itemSelector).first().waitFor({ state: 'attached', timeout: 10000 }).catch(() => {});
-    }
-  }
-
-  const firstItem = this.page.locator(itemSelector).first();
-  await firstItem.waitFor({ state: 'attached', timeout: 30000 }).catch(async () => {
-    const tabs = await this.page.locator('.js-media-library-menu a, .media-library-menu a, .media-library-menu__link').allTextContents();
-    throw friendly(
-      'The media library opened but shows no selectable image to add as cover art.',
-      `Media type tabs offered: ${tabs.map((s) => s.trim()).filter(Boolean).join(', ') || 'none'}. Ensure the site has at least one image media item the author can use.`
-    );
-  });
-  await firstItem.check({ force: true });
-  await smartSettle(this.page, budget);
-
-  // Click "Insert selected" in the modal button pane (a real click, for AJAX).
-  const insert = this.page.locator('.ui-dialog-buttonpane button:has-text("Insert selected"), .media-library-widget-modal button:has-text("Insert selected"), [role="dialog"] button:has-text("Insert selected")').first();
-  await insert.waitFor({ state: 'visible', timeout: 20000 });
-  await insert.click();
-  await smartSettle(this.page, budget);
-
-  // The widget should now show the selected media item.
-  const selected = this.page.locator('.field--name-field-featured-image .media-library-item, [data-drupal-selector="edit-field-featured-image-selection"] .media-library-item, .media-library-selection .media-library-item').first();
+  const selected = mediaWidget(this.page, 'Cover art').locator('.media-library-item').first();
   await selected.waitFor({ state: 'visible', timeout: 20000 }).catch(() => {
     throw friendly('The Cover art widget shows no selected media after inserting.');
   });
 });
 
 /**
- * Upload the example audio file into the episode's "Audio file" field.
+ * Open the media library modal of the named media_library_widget field.
  *
- * field_audio is a file_generic widget: setting the file input fires Drupal's
- * auto-upload AJAX, and where that behaviour is not attached the widget's own
- * "Upload" button is clicked instead. Asserts the uploaded file is listed by
- * the widget afterwards, so a failed upload fails here rather than as a
- * confusing save error later.
- *
- * Example #1: When I upload the example audio file
- * Example #2: And I upload the example audio file
- * Example #3: When we upload the example audio file
- * Example #4: And we upload the example audio file
- * Example #5: Given I upload the example audio file
+ * Example #1: When I open the media library for the "Audio" field
+ * Example #2: And I open the media library for the "Audio" field
+ * Example #3: When we open the media library for the "Cover art" field
+ * Example #4: And we open the media library for the "Cover art" field
+ * Example #5: Given I open the media library for the "Audio" field
  */
-When(/^(?:I |we )*upload the example audio file$/, async function () {
+When(/^(?:I |we )*open the media library for the "([^"]*)" field$/, async function (label) {
   await assertOnPodcastForm(this.page);
   const budget = budgetOf(this);
+  await dismissAutosaveDialog(this.page, budget);
+  await openMediaLibrary(this.page, label, budget);
+});
 
-  const input = this.page.locator('input[type="file"][name^="files[field_audio"]').first();
-  await input.waitFor({ state: 'attached', timeout: 20000 }).catch(() => {
-    throw friendly(
-      'The episode form has no "Audio file" upload input.',
-      'Open the Audio tab first, and check field_audio is on the default form display.'
-    );
+/**
+ * Assert the open media library offers the named media type in its type menu.
+ *
+ * Example #1: Then the media library should offer the "Audio" media type
+ * Example #2: And the media library should offer the "Remote audio" media type
+ * Example #3: Then the media library should offer the "Image" media type
+ * Example #4: And the media library should offer the "Audio" media type
+ * Example #5: Then the media library should offer the "Remote audio" media type
+ */
+Then(/^the media library should offer the "([^"]*)" media type$/, async function (type) {
+  const offered = await mediaLibraryTypes(this.page);
+  assert.ok(
+    offered.some((t) => t.toLowerCase() === type.toLowerCase()),
+    friendly(
+      `The open media library does not offer the "${type}" media type.`,
+      `It offers: ${offered.join(', ') || 'no type menu at all'}. Check the target bundles on the field and that the media type exists on the site.`
+    )
+  );
+});
+
+/**
+ * Select and insert the first item of the named media type from the open
+ * media library.
+ *
+ * Example #1: When I add the first "Audio" media item from the open media library
+ * Example #2: And I add the first "Audio" media item from the open media library
+ * Example #3: When we add the first "Remote audio" media item from the open media library
+ * Example #4: And we add the first "Image" media item from the open media library
+ * Example #5: Given I add the first "Audio" media item from the open media library
+ */
+When(/^(?:I |we )*add the first "([^"]*)" media item from the open media library$/, async function (type) {
+  const budget = budgetOf(this);
+  await switchMediaType(this.page, type, budget);
+  await insertFirstMediaItem(this.page, budget, `${type} media item`);
+});
+
+/**
+ * Assert the named media_library_widget field shows the given media item as
+ * its current selection.
+ *
+ * Example #1: Then the "Audio" field should show the selected media item "Varbase Example Episode Audio"
+ * Example #2: And the "Audio" field should show the selected media item "Varbase Example Episode Audio"
+ * Example #3: Then the "Cover art" field should show the selected media item "Varbase Example Podcast Cover"
+ * Example #4: And the "Cover art" field should show the selected media item "Varbase Example Podcast Cover"
+ * Example #5: Then the "Audio" field should show the selected media item "Episode 12 recording"
+ */
+Then(/^the "([^"]*)" field should show the selected media item "([^"]*)"$/, async function (label, name) {
+  const widget = mediaWidget(this.page, label);
+  const selection = widget.locator('.js-media-library-selection, [id$="-selection"]').first();
+  await selection.locator('.media-library-item').first().waitFor({ state: 'visible', timeout: 20000 }).catch(() => {
+    throw friendly(`The "${label}" field shows no selected media item.`);
   });
-  await input.setInputFiles(`${process.cwd()}/tests/assets/varbase-example-episode.wav`);
-  await smartSettle(this.page, budget);
+  const text = ((await selection.textContent()) || '').replace(/\s+/g, ' ').trim();
+  assert.ok(
+    text.includes(name),
+    friendly(
+      `The "${label}" field does not show "${name}" as its selected media item.`,
+      `The widget selection reads: "${text || 'empty'}".`
+    )
+  );
+});
 
-  // Without Drupal's auto-upload behaviour the widget still shows its Upload
-  // button — press it rather than assuming the AJAX already ran.
-  const uploadButton = this.page.locator('input[name^="field_audio"][name$="_upload_button"], button[name^="field_audio"][name$="_upload_button"]').first();
-  if (await uploadButton.count()) {
-    const visible = await uploadButton.isVisible().catch(() => false);
-    if (visible) {
-      await uploadButton.click();
-      await smartSettle(this.page, budget);
-    }
+/**
+ * Delete the media item carrying the given name, through the core media
+ * delete confirm form (clicks ONLY that form's #edit-submit).
+ *
+ * Example #1: When I delete the "Varbase Example Remote Audio 74504" media item
+ * Example #2: And I delete the "Varbase Example Remote Audio 74504" media item
+ * Example #3: When we delete the "Varbase Example Episode Audio" media item
+ * Example #4: And we delete the "Episode 12 recording" media item
+ * Example #5: Given I delete the "Varbase Example Remote Audio 74504" media item
+ */
+When(/^(?:I |we )*delete the "([^"]*)" media item$/, async function (name) {
+  const base = this.launchUrl.replace(/\/$/, '');
+  await this.page.goto(`${base}/admin/content/media`, { waitUntil: 'domcontentloaded' });
+  await smartSettle(this.page, budgetOf(this));
+
+  const mid = await this.page.evaluate((wanted) => {
+    const row = [...document.querySelectorAll('tr')].find((tr) => (tr.textContent || '').includes(wanted));
+    if (!row) return null;
+    const href = [...row.querySelectorAll('a[href]')]
+      .map((a) => a.getAttribute('href'))
+      .find((h) => /\/media\/\d+(\/|$)/.test(h));
+    return href ? href.match(/\/media\/(\d+)/)[1] : null;
+  }, name);
+
+  if (!mid) {
+    throw friendly(`No media item named "${name}" is listed on the media overview.`, 'Check the item was created and that this user can see it.');
   }
-
-  const uploaded = this.page.locator('.field--name-field-audio a[href*="varbase-example-episode"], .js-form-managed-file a[href*="varbase-example-episode"]').first();
-  await uploaded.waitFor({ state: 'attached', timeout: 30000 }).catch(() => {
-    throw friendly(
-      'The Audio file widget does not list the uploaded file after the upload.',
-      'Check the allowed extensions on field_audio (mp3 m4a ogg wav) and the file directory permissions.'
-    );
+  await this.page.goto(`${base}/media/${mid}/delete`, { waitUntil: 'domcontentloaded' });
+  const onDelete = /\/media\/\d+\/delete/.test(this.page.url()) && (await this.page.locator('#edit-submit').count()) > 0;
+  if (!onDelete) {
+    throw friendly(`Expected the media delete confirm form, but got "${this.page.url()}".`);
+  }
+  await this.page.evaluate(() => {
+    const el = document.getElementById('edit-submit');
+    if (el) el.click();
   });
+  await smartSettle(this.page, budgetOf(this));
 });
 
 /**
@@ -439,7 +590,7 @@ Then(/^the episode page should play media from "([^"]*)"$/, async function (expe
     match,
     friendly(
       `Expected a <video>/<audio> element playing "${expected}", but found: ${JSON.stringify(found)}.`,
-      'Check the episode full content template binds the video component to field_audio / field_audio_url.'
+      'Check the episode full content template binds the video component to the media item field_audio references.'
     )
   );
   assert.ok(match.controls, friendly(`The ${match.tag} playing "${expected}" has no controls, so a visitor cannot play it.`));
@@ -449,7 +600,7 @@ Then(/^the episode page should play media from "([^"]*)"$/, async function (expe
  * Assert the episode page being viewed offers no audio at all — neither an
  * audio player nor a link to an audio file.
  *
- * Both audio fields are optional by design, so an episode drafted before its
+ * The Audio field is optional by design, so an episode drafted before its
  * recording exists has to render as a normal page rather than as a broken
  * player.
  *
