@@ -2,7 +2,7 @@
 
 # Varbase Podcasts Base
 [![pipeline status](https://git.drupalcode.org/project/varbase_podcasts_base/badges/1.0.x/pipeline.svg)](https://git.drupalcode.org/project/varbase_podcasts_base/-/pipelines)
-[![Varbase Podcasts Base](https://img.shields.io/badge/Varbase%20Podcasts%20Base-1.0.0-0d6efc?labelColor=001d38&style=flat-square)](https://git.drupalcode.org/project/varbase_podcasts_base/-/pipelines?ref=1.0.0)
+[![Varbase Podcasts Base](https://img.shields.io/badge/Varbase%20Podcasts%20Base-1.0.0--alpha1-0d6efc?labelColor=001d38&style=flat-square)](https://git.drupalcode.org/project/varbase_podcasts_base/-/pipelines?ref=1.0.0-alpha1)
 [![Automated Functional Testing](https://git.drupalcode.org/project/varbase_project/badges/11.0.x/pipeline.svg)](https://git.drupalcode.org/project/varbase_project/-/pipelines)
 
 A recipe to provide a podcast episode content type, listing view, and related configuration for Varbase. Use Podcasts to publish audio episodes with a host, duration, episode number and transcript in the Podcasts section of the site.
@@ -17,18 +17,18 @@ This recipe builds on top of the Varbase Content Base, Media Base, SEO Base, and
   - Description (short summary text)
   - Featured Image (media reference, used as episode cover art)
   - Content (long text with format, used for the episode transcript)
-  - Audio (file upload, for a self-hosted episode file)
-  - Audio URL (link, for an episode hosted on a podcast platform or CDN)
+  - Audio (media reference to an Audio or Remote audio media item)
   - Duration (plain text, for example `44 Mins`)
   - Episode Number (integer, rendered as the episode eyebrow)
   - Tags (taxonomy reference with autocomplete via Tagify)
 
 ### Audio delivery
-An episode carries **either** a self-hosted file (`field_audio`) **or** a remote URL
-(`field_audio_url`). Both are optional so an episode can be drafted before its audio
-is ready, and the theme decides which player to render. A site that publishes only
-to a hosting platform never has to upload a file, and a site that self-hosts never
-has to keep a second URL in sync.
+An episode carries its audio in one media reference field, `field_audio`, targeting the
+`audio` and `remote_audio` media types from Varbase Media Base. An uploaded file and an
+episode hosted on SoundCloud, Spotify or Apple Podcasts are the same field, so the editor
+picks a media item instead of choosing between two fields, and media reuse, revisions and
+permissions come with it. The field is optional, so an episode can be drafted before its
+audio is ready.
 
 ### Views
 - **Podcasts** (`podcasts`): A views listing with several displays:
@@ -50,9 +50,9 @@ site template, which may serve it from a Canvas page; shipping a view page at
 The recipe ships a Canvas content template for the **full** view mode, built from
 Vartheme BS5 components, so an episode page renders its title, date, duration,
 cover art, audio player, description and transcript on Varbase Starter and on any
-site using the base theme. Vartheme BS5 has no audio component, so each player is
-its video component, which plays audio files. A self-hosted file and a remote URL
-get separate players, and each renders nothing when its field is empty.
+site using the base theme. Vartheme BS5 has no audio component, so the player is its
+video component, which plays audio files, and it renders nothing when the field is
+empty.
 
 The full template has to ship. Varbase Content Base creates an empty full-view
 template for every new content type, and an empty template renders a blank
