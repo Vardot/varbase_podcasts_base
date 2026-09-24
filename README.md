@@ -5,7 +5,7 @@
 [![Varbase Podcasts Base](https://img.shields.io/badge/Varbase%20Podcasts%20Base-1.0.0--alpha1-0d6efc?labelColor=001d38&style=flat-square)](https://git.drupalcode.org/project/varbase_podcasts_base/-/pipelines?ref=1.0.0-alpha1)
 [![Automated Functional Testing](https://git.drupalcode.org/project/varbase_project/badges/11.0.x/pipeline.svg)](https://git.drupalcode.org/project/varbase_project/-/pipelines)
 
-A recipe to provide a podcast episode content type, listing view, and related configuration for Varbase. Use Podcasts to publish audio episodes with a host, duration, episode number and transcript in the Podcasts section of the site.
+A recipe to provide a podcast episode content type, listing view, and related configuration for Varbase. Use Podcasts to publish audio episodes with a summary, cover art, show notes, duration and episode number in the Podcasts section of the site.
 
 This recipe builds on top of the Varbase Content Base, Media Base, SEO Base, and Workflow Base recipes, extending them with podcast-specific content structure, views, and SEO configuration.
 
@@ -19,7 +19,7 @@ This recipe builds on top of the Varbase Content Base, Media Base, SEO Base, and
   - Content (long text with format, used for the episode transcript)
   - Audio (media reference to an Audio or Remote audio media item)
   - Duration (plain text, for example `44 Mins`)
-  - Episode Number (integer, rendered as the episode eyebrow)
+  - Episode Number (integer)
   - Tags (taxonomy reference with autocomplete via Tagify)
 
 ### Audio delivery

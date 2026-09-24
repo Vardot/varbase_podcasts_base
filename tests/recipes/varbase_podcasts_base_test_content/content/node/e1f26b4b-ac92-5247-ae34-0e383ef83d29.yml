@@ -48,7 +48,7 @@ default:
       langcode: en
   field_description:
     -
-      value: 'Example podcast episode number 04 used by the Varbase Podcasts Base functional testing suite. This episode has a remote audio URL.'
+      value: 'Example podcast episode number 04 used by the Varbase Podcasts Base functional testing suite. This episode has an uploaded audio file.'
   field_content:
     -
       value: '<p>Transcript for example podcast episode 04.</p>'

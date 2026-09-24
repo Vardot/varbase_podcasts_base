@@ -1,34 +1,30 @@
+@podcasts @content-model
 Feature: Podcasts Base - Podcast episode content type
       As a Content editor
       I want a Podcast episode content type with the fields the recipe defines
       So that I can publish an audio episode with its cover art, show notes and
       audio.
 
-  @check @local @development @staging @production
-  Scenario: The Podcast episode add form exposes the podcast fields to a Content editor
+  @regression @local @development @staging @production
+  Scenario: The Podcast episode add form asks for a title, a summary and cover art
     Given I am a logged in user with the "Content editor" user
      When I go to "/node/add/podcast"
-      And wait
-     Then I should see "Create Podcast episode"
-      And I should see "Title"
-      And I should see "Summary"
+     Then the page title should contain "Create Podcast episode"
+      And I see visible podcast title field
+      And the field "#edit-title-0-value" should be required
+      And the field "Summary" should be required
+      And the field "Show notes" should exist
+      And the field "Summary" should be empty
       And I should see "Cover art"
-      And I should see "Show notes"
-      And I should see "Audio"
-      And I should see "Duration"
-      And I should see "Episode number"
-      And I should see "Tags"
-      And "#edit-title-0-value" should be visible within 10 seconds
+      And I should see "Add media"
 
-  @check @local @development @staging @production
+  @regression @local @development @staging @production
   Scenario: The Audio tab offers the Audio field as a media reference, not a file upload or a link
     Given I am a logged in user with the "Content editor" user
      When I go to "/node/add/podcast"
-      And wait
       And I open the "Audio" tab on the podcast form
-     Then "#edit-field-audio-open-button" should be visible within 10 seconds
+     Then I see visible audio media button, duration field, episode number field
       And "#edit-field-audio-open-button" should have value "Add media"
-      And "input[name^='files[field_audio']" should not be visible
-      And "#edit-field-audio-url-0-uri" should not be visible
-      And "#edit-field-duration-0-value" should be visible within 10 seconds
-      And "#edit-field-episode-number-0-value" should be visible within 10 seconds
+      And I don't see audio file upload, audio link field
+      And the field "Duration" should not be required
+      And the field "Episode number" should not be required

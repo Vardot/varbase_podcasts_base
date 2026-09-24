@@ -1,7 +1,7 @@
 // cucumber-js configuration for the Varbase Podcasts Base functional testing suite.
 //
 // Drives the podcasts recipe through the browser (Playwright + Cucumber-js via
-// varbase-e2e >= 2.0.4). Feature files live flat in tests/features/ — one recipe,
+// varbase-e2e >= 2.0.7). Feature files live flat in tests/features/: one recipe,
 // no per-feature subfolders.
 //   yarn test                # all features (tests/features/*.feature)
 //   yarn test:chromium       # force chromium
@@ -98,7 +98,7 @@ module.exports = {
         css: {},
         xpath: {},
         filesPath: './tests/selectors/',
-        files: [],
+        files: ['podcasts.json'],
         offset: 60,
         breakpoints: {
           xs:   { width: 375,  height: 667  },

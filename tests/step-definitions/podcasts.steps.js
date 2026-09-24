@@ -1,6 +1,6 @@
 'use strict';
 
-const { When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
+const { When, Then, After, AfterStep, setDefaultTimeout } = require('@cucumber/cucumber');
 const assert = require('assert');
 
 const { smartSettle, friendly } = require('@vardot/varbase-e2e/tests/step-definitions/varbase-e2e');
@@ -12,8 +12,8 @@ const { smartSettle, friendly } = require('@vardot/varbase-e2e/tests/step-defini
 // number fields ("I fill in ..."), so those are not re-implemented here. What
 // IS here is what only this recipe needs:
 //
-//   - the episode form's field-group tabs — Audio, Categorization and the rest
-//     render closed, and a field inside a closed tab is not fillable;
+//   - the episode form's field-group tabs (Audio, Categorization and the rest
+//     render closed), and a field inside a closed tab is not fillable;
 //   - the Cover art and Audio media-library widgets (AJAX modal pickers);
 //   - save / edit / delete, so every authoring scenario stays independent and
 //     removes what it creates;
@@ -33,6 +33,27 @@ const { smartSettle, friendly } = require('@vardot/varbase-e2e/tests/step-defini
 setDefaultTimeout(90000);
 
 const budgetOf = (world) => (world.minWaitTime && world.minWaitTime.page) || 8000;
+
+/**
+ * Resolve a named selector from the registry (tests/selectors/podcasts.json),
+ * so the steps below and the feature files share one place for them.
+ */
+function named(world, name) {
+  const css = (world.__selectorsCss || {})[name];
+  if (!css) {
+    throw friendly(`No selector named "${name}" is registered.`, 'Add it to tests/selectors/podcasts.json.');
+  }
+  return css;
+}
+
+/**
+ * Remember an entity a scenario created, so the cleanup hook can purge it
+ * even when the scenario fails before its own delete step.
+ */
+function trackForCleanup(world, type, id) {
+  world.podcastsCreated = world.podcastsCreated || { node: new Set(), media: new Set() };
+  world.podcastsCreated[type].add(String(id));
+}
 
 /**
  * Assert the browser is on a Podcast episode node add/edit form before a write.
@@ -60,7 +81,9 @@ async function assertOnPodcastForm(page) {
 async function dismissAutosaveDialog(page, budget) {
   const dialog = page.locator('.ui-dialog.autosave-dialog').first();
   if (!(await dialog.count()) || !(await dialog.isVisible().catch(() => false))) return;
-  const reject = dialog.locator('.ui-dialog-buttonpane button').filter({ hasNotText: /restore/i }).first();
+  // Autosave Form offers "Resume editing" and "Discard"; only discarding keeps
+  // the form empty.
+  const reject = dialog.locator('.ui-dialog-buttonpane button').filter({ hasText: /discard|reject/i }).first();
   if (await reject.count()) {
     await reject.click();
   } else {
@@ -71,12 +94,26 @@ async function dismissAutosaveDialog(page, budget) {
 }
 
 /**
+ * Discard a leftover Autosave Form draft as soon as an episode form opens, so
+ * a draft from an earlier, failed scenario is never typed over or restored.
+ */
+AfterStep(async function () {
+  if (!this.page) return;
+  const url = this.page.url();
+  if (!/\/node\/add\/podcast|\/node\/\d+\/edit/.test(url)) return;
+  await dismissAutosaveDialog(this.page, budgetOf(this)).catch(() => {});
+});
+
+/**
  * Resolve the node id of the Podcast episode page currently shown. Reads it
- * from the Edit local-task link (/node/<id>/edit — reliably present for an
- * author), falling back to the shortlink and the node body class.
+ * from drupalSettings.path.currentPath, falling back to the Edit local-task
+ * link, the shortlink and the node body class.
  */
 async function currentEpisodeNid(page) {
   return page.evaluate(() => {
+    const current = (window.drupalSettings && drupalSettings.path && drupalSettings.path.currentPath) || '';
+    const own = current.match(/^node\/(\d+)$/);
+    if (own) return own[1];
     const editHref = [...document.querySelectorAll('a[href*="/node/"]')]
       .map((a) => a.getAttribute('href'))
       .find((h) => /\/node\/\d+\/(edit|delete)/.test(h));
@@ -100,7 +137,7 @@ async function currentEpisodeNid(page) {
 /**
  * Open one of the episode form's field-group tabs by its label.
  *
- * The Podcast episode form groups its fields into horizontal tabs — General
+ * The Podcast episode form groups its fields into horizontal tabs: General
  * (open), Audio, Categorization, SEO and Options (all closed). Playwright will
  * not fill a field inside a closed tab, so Audio, Duration and Episode number
  * need their tab opened first. Handles both renderings the field_group tabs
@@ -127,7 +164,7 @@ When(/^(?:I |we )*open the "([^"]*)" tab on the podcast form$/, async function (
     return;
   }
 
-  // A plain <details> element with that summary — open it in place.
+  // A plain <details> element with that summary: open it in place.
   const opened = await this.page.evaluate((wanted) => {
     const details = [...document.querySelectorAll('details')].find((d) => {
       const summary = d.querySelector('summary');
@@ -161,6 +198,7 @@ When(/^(?:I |we )*open the "([^"]*)" tab on the podcast form$/, async function (
  */
 When(/^(?:I |we )*save the podcast episode$/, async function () {
   await assertOnPodcastForm(this.page);
+  const creating = /\/node\/add\/podcast/.test(this.page.url());
   await this.page.evaluate(() => {
     const el = document.getElementById('edit-submit');
     if (el) el.click();
@@ -172,9 +210,13 @@ When(/^(?:I |we )*save the podcast episode$/, async function () {
       [...document.querySelectorAll('.messages--error, [data-drupal-messages] .messages--error')]
         .map((e) => e.textContent.replace(/\s+/g, ' ').trim()).join(' | '));
     throw friendly(
-      'Saving the podcast episode did not leave the form — the save was rejected.',
+      'Saving the podcast episode did not leave the form, so the save was rejected.',
       errors ? `Form errors: ${errors}` : 'Check the required episode fields (Summary and Cover art are required).'
     );
+  }
+  if (creating) {
+    const nid = await currentEpisodeNid(this.page);
+    if (nid) trackForCleanup(this, 'node', nid);
   }
 });
 
@@ -183,8 +225,8 @@ When(/^(?:I |we )*save the podcast episode$/, async function () {
 //
 // field_audio and field_featured_image are both media_library_widget fields, so
 // the modal is driven through one set of helpers. The Audio field targets two
-// bundles — `audio` (an uploaded file) and `remote_audio` (an oEmbed URL from a
-// podcast platform) — which is why the type menu is something the suite checks
+// bundles, `audio` (an uploaded file) and `remote_audio` (an oEmbed URL from a
+// podcast platform), which is why the type menu is something the suite checks
 // rather than something it skips past.
 // ---------------------------------------------------------------------------
 
@@ -240,7 +282,7 @@ async function openMediaLibrary(page, label, budget) {
       [...document.querySelectorAll('.messages--error')].map((e) => e.textContent.replace(/\s+/g, ' ').trim()).join(' | '));
     throw friendly(
       `The "${label}" media library button stayed disabled, so Drupal never finished an AJAX request on this form.`,
-      errors ? `Form errors: ${errors}` : 'No form error was shown — check the browser console for a failed AJAX response.'
+      errors ? `Form errors: ${errors}` : 'No form error was shown. Check the browser console for a failed AJAX response.'
     );
   }
   await openButton.click();
@@ -255,7 +297,7 @@ async function mediaLibraryTypes(page) {
   const labels = await page
     .locator('.js-media-library-menu a, .media-library-menu a, .media-library-menu__link')
     .allTextContents();
-  // Links read "Show Audio media (active tab)" — reduce that to the type name.
+  // Links read "Show Audio media (active tab)"; reduce that to the type name.
   return labels
     .map((s) => s.replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim())
     .map((s) => s.replace(/^Show\s+/i, '').replace(/\s+media$/i, '').trim())
@@ -304,7 +346,7 @@ async function insertFirstMediaItem(page, budget, what) {
  * from the existing media library.
  *
  * Picking the FIRST item rather than one by name keeps the scenarios
- * independent of which media the site happens to carry — Cover art is
+ * independent of which media the site happens to carry. Cover art is
  * required, so every authoring scenario needs one.
  *
  * Example #1: When I add the first available cover art from the media library
@@ -321,8 +363,8 @@ When(/^(?:I |we )*add the first available cover art from the media library$/, as
   await openMediaLibrary(this.page, 'Cover art', budget);
 
   // field_featured_image restricts no target bundle, so the library lists every
-  // media type and opens on whichever comes first — Audio, since the test
-  // content carries an audio media item. Switch to Image unconditionally: a
+  // media type and opens on whichever comes first (Audio, since the test
+  // content carries an audio media item). Switch to Image unconditionally: a
   // "first available item" that is an audio file silently becomes the cover
   // art, fills the field's single slot, and disables the Add media button.
   await switchMediaType(this.page, 'Image', budget);
@@ -439,6 +481,7 @@ When(/^(?:I |we )*delete the "([^"]*)" media item$/, async function (name) {
   if (!mid) {
     throw friendly(`No media item named "${name}" is listed on the media overview.`, 'Check the item was created and that this user can see it.');
   }
+  trackForCleanup(this, 'media', mid);
   await this.page.goto(`${base}/media/${mid}/delete`, { waitUntil: 'domcontentloaded' });
   const onDelete = /\/media\/\d+\/delete/.test(this.page.url()) && (await this.page.locator('#edit-submit').count()) > 0;
   if (!onDelete) {
@@ -567,7 +610,7 @@ Then(/^the related episodes should include at least (\d+) episodes? other than "
  * given URL (exact) or contains the given file name.
  *
  * Vartheme BS5 ships no audio component, so the episode template renders the
- * `video` component as the player — `<video controls><source src="...">`.
+ * `video` component as the player: `<video controls><source src="...">`.
  * Asserting the element and its `src` turns that choice into something the
  * suite checks: a template that stops rendering the player, or binds it to the
  * wrong field, fails here.
@@ -597,7 +640,7 @@ Then(/^the episode page should play media from "([^"]*)"$/, async function (expe
 });
 
 /**
- * Assert the episode page being viewed offers no audio at all — neither an
+ * Assert the episode page being viewed offers no audio at all: neither an
  * audio player nor a link to an audio file.
  *
  * The Audio field is optional by design, so an episode drafted before its
@@ -628,4 +671,205 @@ Then(/^the podcast episode page should offer no audio$/, async function () {
     audio.links.length, 0,
     friendly(`Expected no audio link on an episode with no audio, but found: ${audio.links.join(', ')}.`)
   );
+});
+
+// ---------------------------------------------------------------------------
+// Usage steps: uploading audio, the player, the sitemap, and cleanup.
+// ---------------------------------------------------------------------------
+
+/**
+ * Upload an audio file from tests/assets into the open media library, save it
+ * as a new Audio media item and insert it into the field.
+ *
+ * The media library uploads through Dropzone, so the file goes into the
+ * Dropzone input rather than a labelled file field. The new media item is
+ * remembered so the cleanup hook purges it.
+ *
+ * Example #1: When I upload the audio file "varbase-example-upload-episode.mp3" to the open media library
+ * Example #2: And I upload the audio file "varbase-example-upload-episode.mp3" to the open media library
+ * Example #3: When we upload the audio file "varbase-example-upload-episode.mp3" to the open media library
+ * Example #4: And we upload the audio file "varbase-example-upload-episode.mp3" to the open media library
+ * Example #5: Given I upload the audio file "varbase-example-upload-episode.mp3" to the open media library
+ */
+When(/^(?:I |we )*upload the audio file "([^"]*)" to the open media library$/, async function (fileName) {
+  const path = require('path');
+  const budget = budgetOf(this);
+  await switchMediaType(this.page, 'Audio', budget);
+
+  const input = this.page.locator('input.dz-hidden-input, .media-library-widget-modal input[type="file"]').last();
+  await input.waitFor({ state: 'attached', timeout: 20000 }).catch(() => {
+    throw friendly('The open media library offers no upload field for Audio.', 'Check the Audio media type allows uploads from the media library.');
+  });
+  await input.setInputFiles(path.resolve(this.assetsFolder || 'tests/assets', fileName));
+
+  // Drupal moves the dialog's form buttons into the button pane and hides the
+  // originals, so the visible Save is the button pane one.
+  const save = this.page.locator('.ui-dialog-buttonpane button').filter({ hasText: /^\s*Save\s*$/ }).first();
+  await save.waitFor({ state: 'visible', timeout: 60000 }).catch(() => {
+    throw friendly(`The media library did not accept "${fileName}".`, 'Check the Audio media type allows this file extension.');
+  });
+  await save.click();
+  await smartSettle(this.page, budget);
+
+  const insert = this.page.locator(
+    '.ui-dialog-buttonpane button:has-text("Insert selected"), .media-library-widget-modal button:has-text("Insert selected")'
+  ).first();
+  await insert.waitFor({ state: 'visible', timeout: 30000 });
+  await insert.click();
+  await this.page.locator(MEDIA_MODAL).first().waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
+  await smartSettle(this.page, budget);
+
+  const mid = await this.page
+    .locator('input[name^="field_audio[selection]"][name$="[target_id]"]')
+    .first()
+    .inputValue()
+    .catch(() => null);
+  if (!mid) {
+    throw friendly(`"${fileName}" was uploaded, but the Audio field shows no selected media item.`);
+  }
+  trackForCleanup(this, 'media', mid);
+});
+
+/**
+ * Assert the episode player's audio source answers HTTP 200 with an audio or
+ * video content type, so the player a listener sees can actually play.
+ *
+ * Example #1: Then the episode player should load its audio
+ * Example #2: And the episode player should load its audio
+ * Example #3: Then the episode player should load its audio
+ * Example #4: And the episode player should load its audio
+ * Example #5: Then the episode player should load its audio
+ */
+Then(/^the episode player should load its audio$/, async function () {
+  const player = this.page.locator(named(this, 'episode player')).first();
+  await player.waitFor({ state: 'attached', timeout: 10000 }).catch(() => {
+    throw friendly('The episode page shows no audio player.');
+  });
+  const src = await player.evaluate((el) => el.currentSrc || el.getAttribute('src') || (el.querySelector('source') || {}).src || '');
+  assert.ok(src, friendly('The episode player has no audio source.'));
+  const url = new URL(src, this.page.url()).toString();
+  const response = await this.page.request.get(url, { headers: { Range: 'bytes=0-1023' } });
+  const type = response.headers()['content-type'] || '';
+  assert.ok(
+    [200, 206].includes(response.status()),
+    friendly(`The episode audio "${url}" answered HTTP ${response.status()}.`)
+  );
+  assert.ok(
+    /^(audio|video)\//.test(type),
+    friendly(`The episode audio "${url}" is served as "${type}", which a player cannot play.`)
+  );
+});
+
+/**
+ * Assert every control a listener uses to play the episode has an accessible
+ * name. Native controls are named by the browser; any control the theme adds
+ * around the player (buttons, sliders) must carry its own name.
+ *
+ * Example #1: Then every episode player control should have an accessible name
+ * Example #2: And every episode player control should have an accessible name
+ * Example #3: Then every episode player control should have an accessible name
+ * Example #4: And every episode player control should have an accessible name
+ * Example #5: Then every episode player control should have an accessible name
+ */
+Then(/^every episode player control should have an accessible name$/, async function () {
+  const selector = named(this, 'episode player');
+  const report = await this.page.evaluate((sel) => {
+    const player = document.querySelector(sel);
+    if (!player) return null;
+    const scope = player.parentElement || player;
+    const unnamed = [...scope.querySelectorAll('button, [role="button"], input, [role="slider"]')]
+      .filter((el) => {
+        const labelled = el.getAttribute('aria-labelledby');
+        const byRef = labelled && labelled.split(/\s+/).some((id) => (document.getElementById(id) || {}).textContent);
+        const byLabel = el.id && document.querySelector(`label[for="${el.id}"]`);
+        return !(el.getAttribute('aria-label') || el.getAttribute('title') || byRef || byLabel || (el.textContent || '').trim() || el.value);
+      })
+      .map((el) => el.outerHTML.slice(0, 120));
+    return { native: player.hasAttribute('controls'), unnamed };
+  }, selector);
+  assert.ok(report, friendly('The episode page shows no audio player.'));
+  assert.ok(
+    report.native || report.unnamed.length === 0,
+    friendly('The episode player has neither native controls nor named custom controls.')
+  );
+  assert.strictEqual(
+    report.unnamed.length, 0,
+    friendly(`Episode player controls without an accessible name: ${report.unnamed.join(' | ')}`)
+  );
+});
+
+/**
+ * Regenerate the XML sitemap from its admin page and wait for the batch to
+ * finish, so the next sitemap check reads fresh content. Needs a user who may
+ * administer the sitemap.
+ *
+ * Example #1: When I regenerate the XML sitemap
+ * Example #2: And I regenerate the XML sitemap
+ * Example #3: When we regenerate the XML sitemap
+ * Example #4: And we regenerate the XML sitemap
+ * Example #5: Given I regenerate the XML sitemap
+ */
+When(/^(?:I |we )*regenerate the XML sitemap$/, async function () {
+  const base = this.launchUrl.replace(/\/$/, '');
+  await this.page.goto(`${base}/admin/config/search/simplesitemap`, { waitUntil: 'domcontentloaded' });
+  const button = this.page.locator('#edit-regenerate-submit');
+  if (!(await button.count())) {
+    throw friendly('The sitemap admin page offers no "Rebuild queue & generate" button.', 'Log in as a user who may administer the sitemap first.');
+  }
+  await Promise.all([
+    this.page.waitForURL(/\/batch/, { timeout: 15000 }).catch(() => {}),
+    button.click(),
+  ]);
+  await this.page.waitForURL((url) => !/\/batch/.test(url.pathname), { timeout: 120000 });
+  await smartSettle(this.page, budgetOf(this));
+});
+
+/**
+ * Purge an entity through the Trash module's purge form, deleting it first
+ * when it is not in the trash yet. Missing entities are skipped.
+ */
+async function purgeEntity(page, base, type, id, budget) {
+  const deletePath = type === 'node' ? `/node/${id}/delete` : `/media/${id}/delete`;
+  const purgePath = type === 'node' ? `/node/${id}/purge?in_trash=1` : `/media/${id}/edit/purge?in_trash=1`;
+  for (const path of [deletePath, purgePath]) {
+    await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+    // Only ever an episode or an audio media item, never other content.
+    const forms = type === 'node'
+      ? ['node-podcast-delete-form', 'node-podcast-purge-form']
+      : ['media-audio-delete-form', 'media-audio-purge-form', 'media-remote-audio-delete-form', 'media-remote-audio-purge-form'];
+    const submit = page.locator(forms.map((id) => `form#${id} #edit-submit`).join(', ')).first();
+    if (await submit.count()) {
+      await submit.evaluate((el) => el.click());
+      await smartSettle(page, budget);
+    }
+  }
+}
+
+/**
+ * Remove every episode and media item the scenario created, as the webmaster,
+ * whether or not the scenario reached its own delete step. Deleted content
+ * goes to the trash on Varbase and keeps its URL alias, so it is purged too:
+ * a re-run on the same site then starts from the same state.
+ */
+After(async function () {
+  const created = this.podcastsCreated;
+  if (!created || (!created.node.size && !created.media.size) || !this.page) return;
+  const webmaster = (this.parameters.users || {}).webmaster;
+  if (!webmaster) return;
+  const base = this.launchUrl.replace(/\/$/, '');
+  const budget = budgetOf(this);
+  try {
+    await this.context.clearCookies();
+    await this.page.goto(`${base}/user/login`, { waitUntil: 'domcontentloaded' });
+    await this.page.fill('#edit-name', webmaster.username || 'webmaster');
+    await this.page.fill('#edit-pass', webmaster.password);
+    await Promise.all([
+      this.page.waitForNavigation({ waitUntil: 'domcontentloaded' }).catch(() => {}),
+      this.page.evaluate(() => document.querySelector('#edit-submit').click()),
+    ]);
+    for (const nid of created.node) await purgeEntity(this.page, base, 'node', nid, budget);
+    for (const mid of created.media) await purgeEntity(this.page, base, 'media', mid, budget);
+  } catch (error) {
+    console.warn(`Podcasts cleanup could not purge everything it created: ${error.message}`);
+  }
 });

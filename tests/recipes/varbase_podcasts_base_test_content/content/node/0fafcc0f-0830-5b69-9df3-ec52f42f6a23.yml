@@ -47,7 +47,7 @@ default:
       langcode: en
   field_description:
     -
-      value: 'Example podcast episode number 13 used by the Varbase Podcasts Base functional testing suite. This episode has no audio yet — drafted before the recording exists.'
+      value: 'Example podcast episode number 13 used by the Varbase Podcasts Base functional testing suite. This episode has no audio yet, drafted before the recording exists.'
   field_content:
     -
       value: '<p>Transcript for example podcast episode 13.</p>'

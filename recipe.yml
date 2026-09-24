@@ -1,5 +1,5 @@
 name: Varbase Podcasts Base
-description: A recipe to provide a podcast episode content type, listing view, and related configuration for Varbase. Use Podcasts to publish audio episodes with a host, duration, episode number and transcript in the Podcasts section of the site.
+description: A recipe to provide a podcast episode content type, listing view, and related configuration for Varbase. Use Podcasts to publish audio episodes with a summary, cover art, show notes, duration and episode number in the Podcasts section of the site.
 type: Varbase Podcasts
 recipes:
   - varbase_content_base

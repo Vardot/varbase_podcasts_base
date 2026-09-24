@@ -85,7 +85,7 @@ component_tree:
     inputs:
       video_file:
         sourceType: entity-field
-        expression: 'ℹ︎␜entity:node:podcast␝field_audio␞0␟entity␜␜entity:media:audio␝field_media_audio_file␞␟entity␜␜entity:file␝uri␞␟{src↠url}'
+        expression: 'ℹ︎␜entity:node:podcast␝field_audio␞␟entity␜␜entity:media:audio␝field_media_audio_file␞␟entity␜␜entity:file␝uri␞␟{src↠url}'
       ratio: 21x9
   0d745a12-759d-57ca-886b-3e29a2f8efa9:
     uuid: 0d745a12-759d-57ca-886b-3e29a2f8efa9

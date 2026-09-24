@@ -667,7 +667,7 @@ display:
           admin_label: ''
           plugin_id: result
           empty: false
-          content: <span class="vb-result-summary"><span class="vb-result-summary__label">Shown articles:</span> <span class="vb-result-summary__count">@start-@end
+          content: <span class="vb-result-summary"><span class="vb-result-summary__label">Shown episodes:</span> <span class="vb-result-summary__count">@start-@end
             of @total</span></span>
       exposed_block: true
       display_extenders:

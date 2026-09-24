@@ -27,4 +27,4 @@ description: 'Use <em>Podcast episode</em> to publish an audio episode with its 
 help: null
 new_revision: true
 preview_mode: 0
-display_submitted: true
+display_submitted: false

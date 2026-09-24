@@ -9,7 +9,7 @@ field_name: field_episode_number
 entity_type: node
 bundle: podcast
 label: 'Episode number'
-description: 'The episode number within the show. Used for ordering and shown alongside the title.'
+description: 'The episode number within the show.'
 required: false
 translatable: true
 default_value: {  }

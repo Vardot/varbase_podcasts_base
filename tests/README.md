@@ -1,147 +1,104 @@
-# Varbase Podcasts Base — automated functional tests
+# Varbase Podcasts Base: functional tests
 
-Behaviour-Driven functional tests for the **Varbase Podcasts Base** recipe, part
-of the Varbase functional testing suite (Playwright + Cucumber-js). They drive a
-running Varbase site through a real browser and assert the behaviour the recipe
-actually provides — the Podcast episode content type and its fields, authoring,
-the audio cases the content model allows, the podcasts listing with its
-filters and pager, the related-episodes display, and the episode permissions.
+The Varbase functional testing suite for the **Varbase Podcasts Base** recipe
+(Playwright + Cucumber-js through `@vardot/varbase-e2e`). The scenarios drive a
+Varbase Starter site with this recipe applied, in a real browser, as an editor
+and as a listener.
 
 ## Layout
 
 ```
 tests/
-├── features/                              # flat — one recipe, no per-feature subfolders
-│   ├── 01-01-podcast-content-type.feature    # the episode add form and its Audio tab
-│   ├── 02-01-create-podcast-episode.feature  # create an episode, assert its page
-│   ├── 02-02-edit-podcast-episode.feature    # edit an episode's title and duration
-│   ├── 02-03-episode-with-local-audio-media.feature   # an uploaded Audio media item
+├── features/                                  # flat, one recipe
+│   ├── 01-01-podcast-content-type.feature        # the add form and its Audio tab
+│   ├── 02-01-create-podcast-episode.feature      # create an episode, check its page
+│   ├── 02-02-edit-podcast-episode.feature        # edit an episode, reload, check
+│   ├── 02-03-episode-with-local-audio-media.feature   # pick or upload an mp3; the player loads it
 │   ├── 02-04-episode-with-remote-audio-media.feature  # the Remote audio media type
-│   ├── 02-05-episode-without-audio.feature   # no Audio media — the field is optional
-│   ├── 03-01-podcasts-listing.feature        # cards, result summary, exposed filters
-│   ├── 03-02-podcasts-filter.feature         # Search by keyword narrows the results
-│   ├── 03-03-podcasts-pager.feature          # 12 per page + a pager on page 2
-│   ├── 03-04-related-episodes.feature        # the related display, given a tag context
-│   └── 04-01-podcast-permissions.feature     # who may author; editor CRUD flow
-├── assets/
-│   └── varbase-example-episode.wav        # the audio the seeded media item carries
-├── step-definitions/
-│   └── podcasts.steps.js                  # the episode form's tabs, cover art, the
-│                                          #   media library widgets and player, save /
-│                                          #   edit / delete, the result summary, related
-└── recipes/
-    └── varbase_podcasts_base_test_content/   # a `type: Content` seed recipe: 15 published
-                                              #   "Varbase Example Episode NN" episodes
-                                              #   sharing one tag and one cover-art media —
-                                              #   12 referencing one Audio media item,
-                                              #   3 with no audio at all
+│   ├── 02-05-episode-without-audio.feature       # no audio: the field is optional
+│   ├── 02-06-editorial-workflow.feature          # editor drafts, admin publishes, listing shows it
+│   ├── 02-07-editing-and-removing-audio.feature  # edits keep the audio; a deleted audio is survivable
+│   ├── 03-01-podcasts-listing.feature            # cards, newest first, result summary, filters
+│   ├── 03-02-podcasts-filter.feature             # keyword and tag filters
+│   ├── 03-03-podcasts-pager.feature              # 12 per page, the Next page link
+│   ├── 03-04-related-episodes.feature            # the related display, given a tag context
+│   ├── 03-05-anonymous-listener.feature          # browse, filter, page, open, play
+│   ├── 04-01-podcast-permissions.feature         # who may author and who may read
+│   ├── 05-01-unpublished-episode-visibility.feature  # drafts stay out of the listing, search and sitemap
+│   ├── 06-01-episode-seo.feature                 # title tag, meta description, canonical, alias
+│   └── 07-01-podcasts-accessibility.feature      # listing and episode page
+├── assets/                                    # the upload fixture (a two second mp3)
+├── recipes/varbase_podcasts_base_test_content/   # the seeded episodes
+├── scripts/provision-test-pages.php           # the listing and related test pages
+├── selectors/podcasts.json                    # named selectors
+└── step-definitions/podcasts.steps.js         # recipe-specific steps and the cleanup hook
 ```
 
-The `NN-NN-` prefix keeps the flat feature files ordered.
+## Tags
 
-The generic `@vardot/varbase-e2e` steps drive everything that is not specific to
-this recipe — the form fields, navigation and assertions — so
-`podcasts.steps.js` stays small.
-
-## Show notes is not authored by the suite
-
-No scenario types into the rich-text **Show notes** field. Its CKEditor 5 editor
-loads the Varbase Plugin Pack and Premium Features plugins from
-`cdn.ckeditor.com`, which a network-isolated CI runner cannot reach, so the
-editor never initialises there. The field's presence on the add form is asserted
-in `01-01`; authoring through it is left out so the scenarios stay deterministic.
-
-Vartheme BS5 has no audio component, so the episode template plays audio through
-its `video` component. `02-03` asserts a `<video>` with controls whose source is
-the file the referenced Audio media carries, so that choice is checked by the
-suite rather than assumed.
-
-## The audio cases
-
-`field_audio` is a single, optional reference to a media item, and the media
-library offers two bundles for it: **Audio** for a file uploaded to this site,
-and **Remote audio** for an oEmbed URL from SoundCloud, Spotify, Apple Podcasts,
-Acast, Audioboom, Simplecast, Spreaker or MixCloud. `02-03` covers the local
-case end to end, `02-05` covers an episode drafted before its recording exists,
-and the seeded fixture carries both shapes so the listing is not made of
-identically-shaped episodes.
-
-`02-04` covers remote audio. Creating a Remote audio media item needs a live
-oEmbed round trip to the provider, so the two scenarios CI runs assert only what
-needs no network — that the Audio field's media library offers the Remote audio
-type alongside Audio, and that its add form exposes the Audio URL field. The one
-scenario that posts a real provider URL is tagged `@external` and is excluded
-from the pipeline:
+Every scenario carries `@regression` and the environments it may run on.
+Scenarios that write content leave out `@production`. Feature tags name the
+area: `@content-model`, `@authoring`, `@workflow`, `@audio`, `@listing`,
+`@listener`, `@permissions`, `@security`, `@seo`, `@a11y`. `@smoke` marks the two
+end-to-end journeys. `@external` needs a live oEmbed provider and is left out of
+CI.
 
 ```bash
-npx cucumber-js --config cucumber.js --tags "not @external"   # what CI runs
-npx cucumber-js --config cucumber.js --tags "@external"       # the live-provider check
+npx cucumber-js --config cucumber.js --tags "@smoke"
+npx cucumber-js --config cucumber.js --tags "@listing and not @external"
+npx cucumber-js --config cucumber.js --tags "@external"
 ```
 
-The Remote audio media type comes from `varbase_media_base`. The episode's
-Canvas full template walks node → media → file for the local case, so a remote
-audio media currently renders no player on the episode page; `02-04` therefore
-stops at the authoring side rather than asserting an embed the template does not
-yet produce.
+## Test data and cleanup
 
-## Prerequisites
+The seed recipe creates 15 published episodes, `Varbase Example Episode 01` to
+`15`, sharing one tag and one cover image. Episode 01 is the newest, so 01 to 12
+are page 1. Episodes 01 to 12 reference one uploaded audio file; 13 to 15 have
+no audio.
 
-- A running Varbase site with this recipe applied (Podcast episode content type,
-  the `podcasts` view and the episode view displays). A stock Varbase Starter
-  site is enough: the episode renders from its own view displays and the view
-  rows through Vartheme BS5's own components, so no site-template theme is
-  needed.
-- The per-role testing users from `cucumber.js` (`Normal user`, `Content
-  editor`, `Content admin`, `SEO admin`, `Site admin`, `webmaster`).
-- The test content seeded — a testing-only **recipe** (not a PHP fixture), so
-  the listing / filter / pager / related scenarios have deterministic data:
+Each authoring scenario creates its own episode and media. An `After` hook in
+`podcasts.steps.js` logs in as the webmaster and purges them, pass or fail.
+Varbase sends deleted content to the trash, where it keeps its URL alias, so a
+plain delete is not enough for a re-run on the same site.
 
-  ```bash
-  drush recipe /path/to/tests/recipes/varbase_podcasts_base_test_content
-  drush cache:rebuild
-  ```
+## What the suite does not cover yet
 
-  It creates 15 published episodes titled `Varbase Example Episode NN`, all
-  sharing the `Varbase Example Podcast Tag` and one cover-art media item, with
-  `created` set so that episode 01 is the newest — the listing sorts by
-  created DESC, so 01–12 are page 1 and 13–15 are page 2. The scenarios isolate
-  the fixture with the "Search by" keyword, so their counts do not depend on any
-  other content on the site.
+- **Remote audio on the episode page.** The full template plays local audio
+  only, and Vartheme BS5 has no oEmbed audio component. `02-04` stops at the
+  authoring side.
+- **Related episodes and a breadcrumb back to the listing on the episode page.**
+  Both belong to the site template. `03-04` checks the related display through a
+  test page instead; the episode breadcrumb only links Home.
+- **Show notes on CI.** `02-06` types into the Show notes editor, which needs
+  the CKEditor 5 plugin scripts from `cdn.ckeditor.com`.
 
-## The listing and related pages are provisioned by the harness
+## The listing and related pages are test-site provisioning
 
-The recipe ships the `podcasts` view with **block displays only** and no page
-display, on purpose: the podcasts landing page belongs to the site template. The
-test site therefore provisions two page displays itself, and neither is recipe
-configuration:
+The recipe ships the `podcasts` view with block displays only, because the
+podcasts landing page belongs to the site template.
+`scripts/provision-test-pages.php` adds `/podcasts` (from the `All podcast
+episodes` block) and `/podcasts-related-test/<tag>/<episode>` (from `Related
+podcast episodes`, with an alias per seeded episode). Neither is recipe
+configuration.
 
-- `/podcasts`, copied from the `All podcast episodes` block display with its
-  exposed filters rendered inline;
-- `/podcasts-related-test/<tag>/<episode>`, copied from the `Related podcast
-  episodes` block display, with its two contextual filters — the tag, and the
-  episode to exclude — taken from the path. An alias per seeded episode
-  (`/podcasts-related-test/episode-01`, `…-14`) gives each tag context a stable
-  URL.
+## Running locally
 
-The related display is exercised as a page rather than as a block on the episode
-page because Varbase Starter's theme renders its regions through Canvas page
-regions, where a classic block placement is never rendered. Both displays are
-added in one `drush php:eval` in `.gitlab-ci.yml`.
-
-## Running
+On a Varbase Starter site with the recipe applied:
 
 ```bash
-npm install                 # varbase-e2e brings Cucumber-js, Playwright, tsx
-npx playwright install chromium
+drush recipe /path/to/tests/recipes/varbase_podcasts_base_test_content
+drush php:script /path/to/tests/scripts/provision-test-pages.php
+drush cache:rebuild
 
-# Point at your running site and run the whole suite:
+npm install && npx playwright install chromium
 LAUNCH_URL=https://your-site.ddev.site npm run test:chromium
-
-# A single feature file:
-FEATURES="tests/features/03-01-podcasts-listing.feature" \
+FEATURES="tests/features/03-05-anonymous-listener.feature" \
   LAUNCH_URL=https://your-site.ddev.site npm run test:chromium
 ```
 
-CI installs a Varbase site that applies this recipe, seeds the users + the test
-content recipe, provisions the listing and related pages, and runs the
-whole suite — see `.gitlab-ci.yml`.
+The per-role testing users in `cucumber.js` must exist. Pages that render image
+media need PHP assertions off (`zend.assertions = -1`), as on any production
+site; see `.gitlab-ci.yml`.
+
+CI builds the same site, seeds it and runs every scenario except `@external` on
+each pipeline. See `.gitlab-ci.yml`.

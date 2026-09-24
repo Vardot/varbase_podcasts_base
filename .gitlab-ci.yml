@@ -12,8 +12,8 @@
 #
 # Two things the test job does that the News Base one does not:
 #
-#   1. It renders episodes with Vartheme BS5 — the theme Varbase Starter
-#      installs — and nothing else. The episode content template this recipe
+#   1. It renders episodes with Vartheme BS5, the theme Varbase Starter
+#      installs, and nothing else. The episode content template this recipe
 #      ships is built from Vartheme BS5 components only (see #3622810), so the
 #      job installs no site-template theme: a base recipe's pipeline must not
 #      depend on one.
@@ -54,7 +54,7 @@ composer:
 
 # Every YAML file the recipe ships has to parse. A recipe that ships a broken
 # config file fails at apply time on someone else's site, which is the worst
-# place to find out. The test fixture recipe is checked too — it is YAML this
+# place to find out. The test fixture recipe is checked too: it is YAML this
 # repository ships.
 yaml:
   stage: validate
@@ -154,7 +154,7 @@ recipe:
     - docker-php-ext-install -j"$(nproc)" gd pdo_mysql zip opcache pcntl
     # Run PHP the way a served site runs it: php.ini-production, which sets
     # zend.assertions=-1. The image ships no php.ini at all, which leaves
-    # assertions ON — and Drupal validates Single Directory Component props
+    # assertions ON, and Drupal validates Single Directory Component props
     # inside an assert(). With assertions on, rendering ANY image media in the
     # media_16_09 view mode throws
     #   [vartheme_bs5:dynamic-responsive-image/width] Integer value found, but a
@@ -177,21 +177,21 @@ recipe:
     - git config --global http.lowSpeedLimit 1000
     - git config --global http.lowSpeedTime 300
     # Install FROM varbase_project's committed composer.lock (dev-pinned, patched
-    # via its committed patches.lock.json) — do NOT re-solve from scratch, which
+    # via its committed patches.lock.json); do NOT re-solve from scratch, which
     # drifts to broken beta releases. --no-scripts: the yarn libraries sync runs
     # as its own CI step below.
     - |
       created=0
       for i in 1 2 3; do
         composer create-project drupal/varbase_project:11.0.x-dev "$SITE_DIR" --no-interaction --no-scripts --ignore-platform-req=ext-pgsql && { created=1; break; }
-        echo "composer create-project attempt $i failed — retrying in 20s"; rm -rf "$SITE_DIR"; sleep 20
+        echo "composer create-project attempt $i failed, retrying in 20s"; rm -rf "$SITE_DIR"; sleep 20
       done
       [ "$created" = "1" ] || { echo "composer create-project failed after 3 attempts"; exit 1; }
     - cd "$SITE_DIR"
     - composer config allow-plugins true -n
     - composer config minimum-stability dev
     - composer config repositories.podcasts_base path "$CI_PROJECT_DIR"
-    # Retry the require — git.drupalcode.org clones intermittently reset (RPC
+    # Retry the require: git.drupalcode.org clones intermittently reset (RPC
     # failed / stream not closed) on a runner, and a single hiccup should not
     # fail the build; five failures do fail it, rather than being swallowed.
     # There is no separate `composer install` afterwards: create-project has
@@ -202,7 +202,7 @@ recipe:
       required=0
       for i in 1 2 3 4 5; do
         composer require "drupal/varbase_podcasts_base:@dev" drush/drush:^13 -W --no-interaction --ignore-platform-req=ext-pgsql && { required=1; break; }
-        echo "composer require attempt $i failed — retrying in 15s"; sleep 15
+        echo "composer require attempt $i failed, retrying in 15s"; sleep 15
       done
       [ "$required" = "1" ] || { echo "composer require failed after 5 attempts"; exit 1; }
     # Apply the Drupal core #2741429 patch directly (EntityDisplayBase: guard a
@@ -226,7 +226,7 @@ recipe:
     - corepack enable || true
     - YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install --network-timeout 600000
     # Make the synced libraries world-readable so Apache (www-data) can serve
-    # them — yarn creates them as root.
+    # them; yarn creates them as root.
     - chmod -R a+rX "$WEB_ROOT/libraries" || true
     # Compose a Site-template recipe (Varbase Starter installs Vartheme BS5 and
     # generates its Canvas components, then the recipe under test) and install
@@ -246,7 +246,7 @@ recipe:
       RECIPE
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" site:install "$SITE_DIR/recipes/podcasts_base_test" --db-url="$DB_URL" --account-name="$ADMIN_NAME" --account-pass="$ADMIN_PASS" --account-mail="$ADMIN_MAIL" --site-name="Podcasts Base Test" --locale=en -y
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" cache:rebuild
-    # Test-ready prep: no antibot, no aggregation. Uninstall Big Pipe — its
+    # Test-ready prep: no antibot, no aggregation. Uninstall Big Pipe: its
     # server-side placeholder sub-requests deadlock a single-threaded server.
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" pm:uninstall antibot -y || true
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" pm:uninstall big_pipe -y || true
@@ -270,67 +270,17 @@ recipe:
       seed_user "SEO admin"      "test.seo_admin@vardot.com"      "seo_admin"
       seed_user "Site admin"     "test.site_admin@vardot.com"     "site_admin"
       seed_user "Super admin"    "test.super_admin@vardot.com"    "administrator"
-    # Seed the deterministic test content (15 example episodes — 12 referencing
-    # one uploaded Audio media item, 3 with no audio — one shared tag and one
+    # Seed the deterministic test content (15 example episodes, 12 referencing
+    # one uploaded Audio media item and 3 with no audio, one shared tag and one
     # cover-art media item) that the listing, pager, filter, related and audio
     # scenarios assert against. A testing-only recipe applied with `drush
     # recipe`, not a PHP fixture.
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" recipe "$CI_PROJECT_DIR/tests/recipes/varbase_podcasts_base_test_content"
-    # Provision the listing and the related display — HARNESS ONLY. The recipe
+    # Provision the listing and the related display, harness only: the recipe
     # ships the podcasts view with block displays and no page display on
-    # purpose, so the test site adds two page displays copied from the blocks:
-    # /podcasts from `all` (exposed filters inline rather than in their own
-    # block), and /podcasts-related-test/<tag>/<episode> from `related`, with an
-    # alias per seeded episode. The related one takes its contextual filters
-    # from the path rather than from a block on the episode page, because
-    # Varbase Starter's theme renders its regions through Canvas page regions,
-    # where a classic block placement is silently never rendered.
-    - |
-      bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" php:eval '
-      $view = \Drupal::entityTypeManager()->getStorage("view")->load("podcasts");
-      $displays = $view->get("display");
-      $page = $displays["all"];
-      $page["id"] = "page_test";
-      $page["display_plugin"] = "page";
-      $page["display_title"] = "Podcasts test listing";
-      $page["position"] = 9;
-      $page["display_options"]["path"] = "podcasts";
-      $page["display_options"]["exposed_block"] = FALSE;
-      unset($page["display_options"]["block_description"], $page["display_options"]["block_hide_empty"]);
-      $displays["page_test"] = $page;
-      $view->set("display", $displays);
-      $view->save();
-      // The related display, as a page whose contextual filters come from the
-      // path: the first argument is the tag, the second the episode to exclude.
-      // An alias per seeded episode gives each "tag context" a stable URL.
-      $related = $displays["related"];
-      $related["id"] = "page_related_test";
-      $related["display_plugin"] = "page";
-      $related["display_title"] = "Related podcast episodes test page";
-      $related["position"] = 10;
-      $related["display_options"]["path"] = "podcasts-related-test/%/%";
-      unset($related["display_options"]["block_description"], $related["display_options"]["block_hide_empty"]);
-      $view = \Drupal::entityTypeManager()->getStorage("view")->load("podcasts");
-      $displays = $view->get("display");
-      $displays["page_related_test"] = $related;
-      $view->set("display", $displays);
-      $view->save();
-      \Drupal::service("router.builder")->rebuild();
-      $aliases = \Drupal::entityTypeManager()->getStorage("path_alias");
-      foreach (["01", "14"] as $nn) {
-        $path = \Drupal::service("path_alias.manager")->getPathByAlias("/podcast/varbase-example-episode-" . $nn);
-        $nid = (int) preg_replace("/\\D/", "", $path);
-        $node = \Drupal::entityTypeManager()->getStorage("node")->load($nid);
-        $tid = (int) $node->get("field_tags")->target_id;
-        $aliases->create([
-          "path" => "/podcasts-related-test/" . $tid . "/" . $nid,
-          "alias" => "/podcasts-related-test/episode-" . $nn,
-          "langcode" => "en",
-        ])->save();
-        print "related context for episode " . $nn . ": tag " . $tid . ", excluding node " . $nid . "\n";
-      }
-      print "provisioned: /podcasts and /podcasts-related-test page displays\n";
-      '
+    # purpose. tests/scripts/provision-test-pages.php adds /podcasts and
+    # /podcasts-related-test/<tag>/<episode>, so a local run uses the same page.
+    - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" php:script "$CI_PROJECT_DIR/tests/scripts/provision-test-pages.php"
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" cache:rebuild
     # Point Apache at the Drupal docroot, honour its .htaccess (clean URLs) and
     # let www-data read the built site.
@@ -343,7 +293,7 @@ recipe:
     - npm install --no-audit --no-fund
     - npx playwright install --with-deps chromium
   script:
-    # Serve the site with Apache + mod_php (a real webserver — no built-in-server
+    # Serve the site with Apache + mod_php (a real webserver, no built-in-server
     # response truncation). Start it as a daemon so it stays up for cucumber.
     - apache2ctl start || service apache2 start
     - for i in $(seq 1 45); do curl -sf -o /dev/null "$LAUNCH_URL/" && break; sleep 2; done
@@ -361,7 +311,7 @@ recipe:
         echo "$path -> HTTP $code  title: $(grep -aoiE '<title>[^<]*</title>' /tmp/page.html | head -1)"
         echo "$path carries the episode title: $(grep -ac 'Varbase Example Episode 01' /tmp/page.html || true)"
         if [ "$code" != "200" ]; then
-          echo "$path did not return 200 — page exception:"
+          echo "$path did not return 200, page exception:"
           grep -aioE "(PluginNotFoundException|Exception[^<]{0,180}|Error:[^<]{0,180}|in [^ <]+\.php on line [0-9]+|does not exist[^<]{0,120}|no such[^<]{0,120})" /tmp/page.html | head -15 || true
           echo "--- fresh watchdog errors (full) ---"
           bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" watchdog:show --count=5 --severity=Error --extended 2>&1 | tail -80 || true
@@ -370,5 +320,5 @@ recipe:
       done
     - cd "$CI_PROJECT_DIR"
     # @external posts a real provider URL to SoundCloud's oEmbed endpoint, which
-    # a network-isolated runner cannot reach — run it locally, not here.
+    # a network-isolated runner cannot reach; run it locally, not here.
     - BROWSER=chromium node ./node_modules/@cucumber/cucumber/bin/cucumber.js --config cucumber.js --tags "not @wip and not @external" --retry 1
