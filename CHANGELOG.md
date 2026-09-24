@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-24
+### Changed
+- Usage scenarios in the Varbase functional testing suite, on varbase-e2e 2.0.7 (#3625560).
+
+### Fixed
+- An episode without audio no longer logs a Canvas error (#3625561).
+- Podcast cards no longer show the author and an unnamed avatar link (#3625562).
+- Podcast wording matches the fields the recipe ships (#3625563).
+
 ## [1.0.0-alpha1] - 2026-09-21
 ### Added
 - Initial Varbase Podcasts Base recipe, providing the `podcast` content type for
@@ -57,5 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environment happens to create, so a podcast renders and is indexed the same way
   on every site.
 
-[Unreleased]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/1.0.0-alpha1...1.0.x
+[Unreleased]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/1.0.0...1.0.x
+[1.0.0]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/1.0.0-alpha1...1.0.0
 [1.0.0-alpha1]: https://git.drupalcode.org/project/varbase_podcasts_base/-/tags/1.0.0-alpha1
