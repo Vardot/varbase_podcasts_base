@@ -7,7 +7,8 @@ Feature: Podcasts Base - Publishing an episode through the editorial workflow
   @regression @smoke @local @development @staging
   Scenario: An episode written by a Content editor is published by a Content admin and reaches the listing
     Given I am a logged in user with the "Content editor" user
-     When I go to "/node/add/podcast"
+     When I go to "/node/add/podcast_episode"
+      And I assign the episode to the "Varbase Example Podcast One" podcast
       And I fill in "Title" with "Varbase Example Journey Episode 74510"
       And I fill in "Summary" with "A complete episode written for the editorial journey test 74510."
       And I add the first available cover art from the media library
@@ -23,21 +24,21 @@ Feature: Podcasts Base - Publishing an episode through the editorial workflow
      Then the page title should contain "Varbase Example Journey Episode 74510 | "
      When I logout
       And I am an anonymous user
-      And I go to "/podcasts?search=74510"
+      And I go to "/podcast-episodes?search=74510"
      Then I should not see "Varbase Example Journey Episode 74510"
       And I should see "There are no podcast episodes yet."
      When I am a logged in user with the "Content admin" user
-      And I go to "/podcast/varbase-example-journey-episode-74510"
+      And I go to "/podcasts/varbase-example-podcast-one/varbase-example-journey-episode-74510"
       And I open the edit form for the podcast episode I am viewing
       And I select "Published" from "Change to"
       And I save the podcast episode
       And I logout
       And I am an anonymous user
-      And I go to "/podcasts?search=Varbase+Example"
+      And I go to "/podcast-episodes?search=Varbase+Example"
      Then I should see "Varbase Example Journey Episode 74510"
       And the text "Varbase Example Episode 01" should appear after the text "Varbase Example Journey Episode 74510"
      When I follow "Varbase Example Journey Episode 74510"
-     Then the path should be "/podcast/varbase-example-journey-episode-74510"
+     Then the path should be "/podcasts/varbase-example-podcast-one/varbase-example-journey-episode-74510"
       And I should see "A complete episode written for the editorial journey test 74510."
       And I should see "Transcript of the editorial journey episode 74510."
       And I should see "31 Mins"

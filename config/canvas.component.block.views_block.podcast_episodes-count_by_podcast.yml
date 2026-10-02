@@ -1,0 +1,27 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - views.view.podcast_episodes
+  module:
+    - views
+active_version: 573b7f68699a04e1
+versioned_properties:
+  active:
+    settings:
+      default_settings:
+        id: 'views_block:podcast_episodes-count_by_podcast'
+        label: 'Podcast episodes: episode count of this podcast'
+        label_display: '0'
+        provider: views
+        views_label: ''
+        items_per_page: null
+        exposed: {  }
+    fallback_metadata:
+      slot_definitions: null
+label: 'Podcast episodes: episode count of this podcast'
+id: block.views_block.podcast_episodes-count_by_podcast
+provider: views
+source: block
+source_local_id: 'views_block:podcast_episodes-count_by_podcast'
+

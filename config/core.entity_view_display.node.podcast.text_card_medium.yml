@@ -3,12 +3,10 @@ status: true
 dependencies:
   config:
     - core.entity_view_mode.node.text_card_medium
-    - field.field.node.podcast.field_audio
     - field.field.node.podcast.field_content
     - field.field.node.podcast.field_description
-    - field.field.node.podcast.field_duration
-    - field.field.node.podcast.field_episode_number
     - field.field.node.podcast.field_featured_image
+    - field.field.node.podcast.field_host
     - field.field.node.podcast.field_tags
     - node.type.podcast
   module:
@@ -43,11 +41,10 @@ content:
     region: content
 hidden:
   content_moderation_control: true
-  field_audio: true
   field_content: true
-  field_duration: true
-  field_episode_number: true
   field_featured_image: true
+  field_host: true
   field_tags: true
   links: true
   search_api_excerpt: true
+

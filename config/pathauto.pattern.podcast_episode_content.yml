@@ -1,0 +1,23 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - node.type.podcast_episode
+  module:
+    - node
+id: podcast_episode_content
+label: 'Podcast episode'
+type: 'canonical_entities:node'
+pattern: '/podcasts/[node:field_podcast:entity:title]/[node:title]'
+selection_criteria:
+  81e4c2a6-fb4c-45a9-8f53-1caefbfd2766:
+    id: 'entity_bundle:node'
+    negate: false
+    context_mapping:
+      node: node
+    bundles:
+      podcast_episode: podcast_episode
+selection_logic: and
+weight: -6
+relationships: {  }
+

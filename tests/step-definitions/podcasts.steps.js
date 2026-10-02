@@ -14,13 +14,14 @@ const { smartSettle, friendly } = require('@vardot/varbase-e2e/tests/step-defini
 //
 //   - the episode form's field-group tabs (Audio, Categorization and the rest
 //     render closed), and a field inside a closed tab is not fillable;
+//   - the episode's Podcast autocomplete, which every episode must fill;
 //   - the Cover art and Audio media-library widgets (AJAX modal pickers);
 //   - save / edit / delete, so every authoring scenario stays independent and
 //     removes what it creates;
 //   - the listing result summary and the related-episodes assertion.
 //
 // SAFETY: state-changing steps click ONLY specific, verified elements (never a
-// "first form submit" fallback) and fail fast if the page is not the expected
+// "first form submit" fallback) and fail fast if the page is not a Podcast or
 // Podcast episode node form, so a mis-navigated run can never submit an
 // unrelated form.
 // -----------------------------------------------------------------------------
@@ -56,7 +57,8 @@ function trackForCleanup(world, type, id) {
 }
 
 /**
- * Assert the browser is on a Podcast episode node add/edit form before a write.
+ * Assert the browser is on a Podcast or Podcast episode add/edit form before a
+ * write. /node/add/podcast matches both add forms.
  */
 async function assertOnPodcastForm(page) {
   const url = page.url();
@@ -64,8 +66,8 @@ async function assertOnPodcastForm(page) {
   const hasTitle = (await page.locator('#edit-title-0-value').count()) > 0;
   if (!onForm || !hasTitle) {
     throw friendly(
-      `Expected to be on the Podcast episode add/edit form, but the current page is "${url}".`,
-      'Navigate to /node/add/podcast (or /node/<id>/edit) before this step.'
+      `Expected to be on a Podcast or Podcast episode add/edit form, but the current page is "${url}".`,
+      'Navigate to /node/add/podcast_episode, /node/add/podcast or /node/<id>/edit before this step.'
     );
   }
 }
@@ -177,7 +179,7 @@ When(/^(?:I |we )*open the "([^"]*)" tab on the podcast form$/, async function (
   if (!opened) {
     throw friendly(
       `No "${label}" tab or details group was found on the Podcast episode form.`,
-      'Check the field_group labels in core.entity_form_display.node.podcast.default.yml.'
+      'Check the field_group labels in core.entity_form_display.node.podcast_episode.default.yml.'
     );
   }
   await smartSettle(this.page, budgetOf(this));
@@ -211,13 +213,67 @@ When(/^(?:I |we )*save the podcast episode$/, async function () {
         .map((e) => e.textContent.replace(/\s+/g, ' ').trim()).join(' | '));
     throw friendly(
       'Saving the podcast episode did not leave the form, so the save was rejected.',
-      errors ? `Form errors: ${errors}` : 'Check the required episode fields (Summary and Cover art are required).'
+      errors ? `Form errors: ${errors}` : 'Check the required episode fields (Podcast, Summary and Cover art are required).'
     );
   }
   if (creating) {
     const nid = await currentEpisodeNid(this.page);
     if (nid) trackForCleanup(this, 'node', nid);
   }
+});
+
+/**
+ * Submit the current Podcast episode form (clicks ONLY #edit-submit) without
+ * expecting it to save, for scenarios that assert a validation error.
+ *
+ * Example #1: When I try to save the podcast episode
+ * Example #2: And I try to save the podcast episode
+ * Example #3: When we try to save the podcast episode
+ * Example #4: And we try to save the podcast episode
+ * Example #5: Given I try to save the podcast episode
+ */
+When(/^(?:I |we )*try to save the podcast episode$/, async function () {
+  await assertOnPodcastForm(this.page);
+  await this.page.evaluate(() => {
+    const el = document.getElementById('edit-submit');
+    if (el) el.click();
+  });
+  await smartSettle(this.page, budgetOf(this));
+  const nid = /\/node\/add\/podcast/.test(this.page.url()) ? null : await currentEpisodeNid(this.page);
+  if (nid) trackForCleanup(this, 'node', nid);
+});
+
+/**
+ * Pick the podcast an episode belongs to in the required Podcast autocomplete,
+ * choosing the suggestion Drupal offers for the typed title.
+ *
+ * Example #1: When I assign the episode to the "Varbase Example Podcast One" podcast
+ * Example #2: And I assign the episode to the "Varbase Example Podcast One" podcast
+ * Example #3: When we assign the episode to the "Varbase Example Podcast Two" podcast
+ * Example #4: And we assign the episode to the "Varbase Example Podcast Two" podcast
+ * Example #5: Given I assign the episode to the "Varbase Example Podcast One" podcast
+ */
+When(/^(?:I |we )*assign the episode to the "([^"]*)" podcast$/, async function (title) {
+  await assertOnPodcastForm(this.page);
+  const budget = budgetOf(this);
+  await dismissAutosaveDialog(this.page, budget);
+  const field = this.page.locator(named(this, 'podcast reference field'));
+  if (!(await field.count())) {
+    throw friendly('This form has no Podcast field.', 'Only the Podcast episode form references a podcast.');
+  }
+  await field.fill('');
+  await field.pressSequentially(title.slice(0, 12));
+  const suggestion = this.page.locator('ul.ui-autocomplete:visible li').filter({ hasText: title }).first();
+  await suggestion.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {
+    throw friendly(`The Podcast field offered no "${title}" suggestion.`, 'Check the podcast exists and is published.');
+  });
+  await suggestion.click();
+  await smartSettle(this.page, budget);
+  const value = await field.inputValue();
+  assert.ok(
+    value.startsWith(title),
+    friendly(`The Podcast field reads "${value}" after choosing "${title}".`)
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -564,6 +620,30 @@ Then(/^the podcasts result summary should show a total of (\d+)$/, async functio
 });
 
 /**
+ * Assert the podcasts listing shows the named podcast with its episode count,
+ * whether the count reads "10 Episodes" or "Episodes 10".
+ *
+ * Example #1: Then the "Varbase Example Podcast One" podcast should be listed with 10 episodes
+ * Example #2: And the "Varbase Example Podcast Two" podcast should be listed with 5 episodes
+ * Example #3: Then the "Varbase Example Podcast Two" podcast should be listed with 1 episode
+ * Example #4: And the "Varbase Example Podcast One" podcast should be listed with 0 episodes
+ * Example #5: Then the "Weekly Show" podcast should be listed with 12 episodes
+ */
+Then(/^the "([^"]*)" podcast should be listed with (\d+) episodes?$/, async function (title, count) {
+  const items = this.page.locator(named(this, 'podcast listing item')).filter({ hasText: title });
+  await items.first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
+    throw friendly(`The podcasts listing does not show "${title}".`);
+  });
+  // What a listener sees: hidden view fields must not run into the count.
+  const text = ((await items.first().innerText()) || '').replace(/\s+/g, ' ').trim();
+  const re = new RegExp(`(^|\\D)${count}\\s+Episodes?\\b|\\bEpisodes?:?\\s+${count}(\\D|$)`, 'i');
+  assert.ok(
+    re.test(text),
+    friendly(`Expected "${title}" to be listed with ${count} episode(s).`, `Its listing entry reads: "${text}".`)
+  );
+});
+
+/**
  * Assert the related display lists at least N seeded episodes, none of which is
  * the episode whose tag context was given.
  *
@@ -833,9 +913,9 @@ async function purgeEntity(page, base, type, id, budget) {
   const purgePath = type === 'node' ? `/node/${id}/purge?in_trash=1` : `/media/${id}/edit/purge?in_trash=1`;
   for (const path of [deletePath, purgePath]) {
     await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded' }).catch(() => {});
-    // Only ever an episode or an audio media item, never other content.
+    // Only ever a podcast, an episode or an audio media item, never other content.
     const forms = type === 'node'
-      ? ['node-podcast-delete-form', 'node-podcast-purge-form']
+      ? ['node-podcast-delete-form', 'node-podcast-purge-form', 'node-podcast-episode-delete-form', 'node-podcast-episode-purge-form']
       : ['media-audio-delete-form', 'media-audio-purge-form', 'media-remote-audio-delete-form', 'media-remote-audio-purge-form'];
     const submit = page.locator(forms.map((id) => `form#${id} #edit-submit`).join(', ')).first();
     if (await submit.count()) {
@@ -846,7 +926,7 @@ async function purgeEntity(page, base, type, id, budget) {
 }
 
 /**
- * Remove every episode and media item the scenario created, as the webmaster,
+ * Remove every podcast, episode and media item the scenario created, as the webmaster,
  * whether or not the scenario reached its own delete step. Deleted content
  * goes to the trash on Varbase and keeps its URL alias, so it is purged too:
  * a re-run on the same site then starts from the same state.

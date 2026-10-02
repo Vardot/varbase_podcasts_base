@@ -18,3 +18,4 @@ settings:
   handler: 'default:filter_existing_terms'
   handler_settings: {  }
 field_type: entity_reference
+

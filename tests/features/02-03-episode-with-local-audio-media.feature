@@ -7,7 +7,8 @@ Feature: Podcasts Base - An episode with a local audio media item
   @regression @local @development @staging
   Scenario: A Content editor gives an episode an existing audio media item
     Given I am a logged in user with the "Content editor" user
-     When I go to "/node/add/podcast"
+     When I go to "/node/add/podcast_episode"
+      And I assign the episode to the "Varbase Example Podcast One" podcast
       And I fill in "Title" with "Varbase Example Audio Media Episode 74503"
       And I fill in "Summary" with "Summary for the local audio media test episode 74503."
       And I add the first available cover art from the media library
@@ -28,7 +29,8 @@ Feature: Podcasts Base - An episode with a local audio media item
   @regression @local @development @staging
   Scenario: A Content editor uploads an mp3 through the media library and the episode plays it
     Given I am a logged in user with the "Content editor" user
-     When I go to "/node/add/podcast"
+     When I go to "/node/add/podcast_episode"
+      And I assign the episode to the "Varbase Example Podcast One" podcast
       And I fill in "Title" with "Varbase Example Upload Episode 74507"
       And I fill in "Summary" with "Summary for the uploaded audio test episode 74507."
       And I add the first available cover art from the media library
@@ -44,7 +46,7 @@ Feature: Podcasts Base - An episode with a local audio media item
   @regression @local @development @staging @production
   Scenario: An anonymous visitor can play the audio of a seeded episode
     Given I am an anonymous user
-     When I go to "/podcast/varbase-example-episode-01"
+     When I go to "/podcasts/varbase-example-podcast-one/varbase-example-episode-01"
      Then the page title should contain "Varbase Example Episode 01 | "
       And I see visible episode player
       And the episode page should play media from "varbase-example-episode"

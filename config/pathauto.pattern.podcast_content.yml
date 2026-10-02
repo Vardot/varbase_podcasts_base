@@ -6,9 +6,9 @@ dependencies:
   module:
     - node
 id: podcast_content
-label: 'Podcast episode content'
+label: Podcast
 type: 'canonical_entities:node'
-pattern: '/podcast/[node:title]'
+pattern: '/podcasts/[node:title]'
 selection_criteria:
   555f610f-9f82-4489-828d-eae7b81a740e:
     id: 'entity_bundle:node'
@@ -21,3 +21,4 @@ selection_criteria:
 selection_logic: and
 weight: -5
 relationships: {  }
+

@@ -1,0 +1,27 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - views.view.podcasts
+  module:
+    - views
+active_version: fa919fed33225238
+versioned_properties:
+  active:
+    settings:
+      default_settings:
+        id: 'views_block:podcasts-more'
+        label: 'Podcasts: more podcasts'
+        label_display: '0'
+        provider: views
+        views_label: ''
+        items_per_page: null
+        exposed: {  }
+    fallback_metadata:
+      slot_definitions: null
+label: 'Podcasts: more podcasts'
+id: block.views_block.podcasts-more
+provider: views
+source: block
+source_local_id: 'views_block:podcasts-more'
+

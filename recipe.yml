@@ -1,5 +1,5 @@
 name: Varbase Podcasts Base
-description: A recipe to provide a podcast episode content type, listing view, and related configuration for Varbase. Use Podcasts to publish audio episodes with a summary, cover art, show notes, duration and episode number in the Podcasts section of the site.
+description: A recipe to provide Podcast and Podcast episode content types, their listing views, and related configuration for Varbase. A Podcast is a show with cover art and a description; its episodes carry the audio, show notes, duration and episode number, and the Podcasts section lists the shows with their episode counts.
 type: Varbase Podcasts
 recipes:
   - varbase_content_base
@@ -15,9 +15,11 @@ config:
     user.role.anonymous:
       grantPermissions:
         - access_unpublished node podcast
+        - access_unpublished node podcast_episode
     user.role.authenticated:
       grantPermissions:
         - access_unpublished node podcast
+        - access_unpublished node podcast_episode
     user.role.content_editor:
       grantPermissions:
         - create podcast content
@@ -28,6 +30,14 @@ config:
         - edit own podcast content
         - revert podcast revisions
         - view podcast revisions
+        - create podcast_episode content
+        - delete any podcast_episode content
+        - delete own podcast_episode content
+        - delete podcast_episode revisions
+        - edit any podcast_episode content
+        - edit own podcast_episode content
+        - revert podcast_episode revisions
+        - view podcast_episode revisions
     user.role.content_admin:
       grantPermissions:
         - create podcast content
@@ -38,6 +48,14 @@ config:
         - edit own podcast content
         - revert podcast revisions
         - view podcast revisions
+        - create podcast_episode content
+        - delete any podcast_episode content
+        - delete own podcast_episode content
+        - delete podcast_episode revisions
+        - edit any podcast_episode content
+        - edit own podcast_episode content
+        - revert podcast_episode revisions
+        - view podcast_episode revisions
     user.role.seo_admin:
       grantPermissions:
         - create podcast content
@@ -46,6 +64,12 @@ config:
         - edit any podcast content
         - edit own podcast content
         - view podcast revisions
+        - create podcast_episode content
+        - delete any podcast_episode content
+        - delete own podcast_episode content
+        - edit any podcast_episode content
+        - edit own podcast_episode content
+        - view podcast_episode revisions
     user.role.site_admin:
       grantPermissions:
         - create podcast content
@@ -56,6 +80,15 @@ config:
         - edit own podcast content
         - revert podcast revisions
         - view podcast revisions
+        - create podcast_episode content
+        - delete any podcast_episode content
+        - delete own podcast_episode content
+        - delete podcast_episode revisions
+        - edit any podcast_episode content
+        - edit own podcast_episode content
+        - revert podcast_episode revisions
+        - view podcast_episode revisions
     workflows.workflow.varbase_editorial_workflow:
       addNodeTypes:
         - podcast
+        - podcast_episode

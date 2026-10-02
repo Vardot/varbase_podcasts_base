@@ -1,0 +1,27 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - views.view.podcast_episodes
+  module:
+    - views
+active_version: 1eaf6193ab32ee73
+versioned_properties:
+  active:
+    settings:
+      default_settings:
+        id: 'views_block:podcast_episodes-more_by_podcast'
+        label: 'More episodes of this podcast'
+        label_display: '0'
+        provider: views
+        views_label: ''
+        items_per_page: null
+        exposed: {  }
+    fallback_metadata:
+      slot_definitions: null
+label: 'More episodes of this podcast'
+id: block.views_block.podcast_episodes-more_by_podcast
+provider: views
+source: block
+source_local_id: 'views_block:podcast_episodes-more_by_podcast'
+

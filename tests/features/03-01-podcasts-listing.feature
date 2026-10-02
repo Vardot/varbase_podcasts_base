@@ -7,10 +7,10 @@ Feature: Podcasts Base - Podcasts listing
   @regression @local @development @staging @production
   Scenario: The podcasts listing shows episode cards, newest first, with a result summary
     Given I am an anonymous user
-     When I go to "/podcasts?search=Varbase+Example+Episode"
+     When I go to "/podcast-episodes?search=Varbase+Example+Episode"
      Then I should see "1-12 of 15" in the ".vb-result-summary" element
-      And ".podcast--card" should have a count of 12
-      And "a[href='/podcast/varbase-example-episode-01']" should be attached
+      And ".podcast-episode--card" should have a count of 12
+      And "a[href='/podcasts/varbase-example-podcast-one/varbase-example-episode-01']" should be attached
       And the text "Varbase Example Episode 02" should appear after the text "Varbase Example Episode 01"
       And the text "Varbase Example Episode 12" should appear after the text "Varbase Example Episode 11"
       And I should not see "Varbase Example Episode 13"
@@ -18,7 +18,7 @@ Feature: Podcasts Base - Podcasts listing
   @regression @local @development @staging @production
   Scenario: The podcasts listing exposes the keyword and tag filters
     Given I am an anonymous user
-     When I go to "/podcasts?search=Varbase+Example+Episode"
+     When I go to "/podcast-episodes?search=Varbase+Example+Episode"
      Then the field "Search by" should exist
       And the option "Varbase Example Podcast Tag" should exist within the select element "select[name='industry']"
       And I should see "Apply Filter"
@@ -26,8 +26,8 @@ Feature: Podcasts Base - Podcasts listing
   @regression @local @development @staging @production
   Scenario: A listed episode opens its episode page
     Given I am an anonymous user
-     When I go to "/podcasts?search=Varbase+Example+Episode+01"
+     When I go to "/podcast-episodes?search=Varbase+Example+Episode+01"
       And I follow "Varbase Example Episode 01"
-     Then the path should be "/podcast/varbase-example-episode-01"
+     Then the path should be "/podcasts/varbase-example-podcast-one/varbase-example-episode-01"
       And the page title should contain "Varbase Example Episode 01 | "
       And I should see "44 Mins"

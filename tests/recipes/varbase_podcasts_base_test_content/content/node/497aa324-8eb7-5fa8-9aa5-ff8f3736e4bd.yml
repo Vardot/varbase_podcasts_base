@@ -2,9 +2,10 @@ _meta:
   version: '1.0'
   entity_type: node
   uuid: 497aa324-8eb7-5fa8-9aa5-ff8f3736e4bd
-  bundle: podcast
+  bundle: podcast_episode
   default_langcode: en
   depends:
+    9a04c1bc-874a-5fa4-86b3-cbba60c8f4de: node
     3f1b0c2e-8a44-5b17-9c6d-1e2f3a4b5c6d: media
     9c2c217c-bcef-5f55-a45a-75ed0b7a011a: media
     ea7d56c9-c038-5922-a05d-4d7bcd77e6f2: taxonomy_term
@@ -44,7 +45,7 @@ default:
       value: true
   path:
     -
-      alias: /podcast/varbase-example-episode-03
+      alias: /podcasts/varbase-example-podcast-one/varbase-example-episode-03
       langcode: en
   field_description:
     -
@@ -68,3 +69,6 @@ default:
   field_audio:
     -
       entity: 3f1b0c2e-8a44-5b17-9c6d-1e2f3a4b5c6d
+  field_podcast:
+    -
+      entity: 9a04c1bc-874a-5fa4-86b3-cbba60c8f4de

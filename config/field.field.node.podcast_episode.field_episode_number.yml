@@ -3,11 +3,11 @@ status: true
 dependencies:
   config:
     - field.storage.node.field_episode_number
-    - node.type.podcast
-id: node.podcast.field_episode_number
+    - node.type.podcast_episode
+id: node.podcast_episode.field_episode_number
 field_name: field_episode_number
 entity_type: node
-bundle: podcast
+bundle: podcast_episode
 label: 'Episode number'
 description: 'The episode number within the show.'
 required: false
@@ -20,3 +20,4 @@ settings:
   prefix: ''
   suffix: ''
 field_type: integer
+

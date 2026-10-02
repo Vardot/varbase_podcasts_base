@@ -7,7 +7,7 @@ Feature: Podcasts Base - Remote audio on an episode
   @regression @local @development @staging @production
   Scenario: The Audio field offers both a local and a remote audio media type
     Given I am a logged in user with the "Content editor" user
-     When I go to "/node/add/podcast"
+     When I go to "/node/add/podcast_episode"
       And I open the "Audio" tab on the podcast form
       And I open the media library for the "Audio" field
      Then the media library should offer the "Audio" media type

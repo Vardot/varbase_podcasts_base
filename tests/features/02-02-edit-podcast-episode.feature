@@ -7,7 +7,8 @@ Feature: Podcasts Base - Editing a podcast episode
   @regression @local @development @staging
   Scenario: A Content editor edits an episode's title and duration
     Given I am a logged in user with the "Content editor" user
-     When I go to "/node/add/podcast"
+     When I go to "/node/add/podcast_episode"
+      And I assign the episode to the "Varbase Example Podcast One" podcast
       And I fill in "Title" with "Varbase Example Edit Episode 74502 before"
       And I fill in "Summary" with "Summary for the edit test episode 74502."
       And I add the first available cover art from the media library

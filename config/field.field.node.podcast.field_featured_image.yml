@@ -18,3 +18,4 @@ settings:
   handler: 'default:media'
   handler_settings: {  }
 field_type: entity_reference
+

@@ -6,22 +6,22 @@
 # the recipe manifest and every configuration file it ships.
 #
 # test assembles a real Varbase site (Varbase Starter + this recipe), seeds the
-# testing users and a deterministic episode fixture, serves it with Apache +
+# testing users and a deterministic podcast fixture, serves it with Apache +
 # mod_php and runs the varbase-e2e (Playwright + Cucumber-js) suite in
 # tests/features against it. Modelled on the Varbase News Base pipeline.
 #
 # Two things the test job does that the News Base one does not:
 #
-#   1. It renders episodes with Vartheme BS5, the theme Varbase Starter
-#      installs, and nothing else. The episode content template this recipe
-#      ships is built from Vartheme BS5 components only (see #3622810), so the
+#   1. It renders podcasts and episodes with Vartheme BS5, the theme Varbase
+#      Starter installs, and nothing else. The content templates this recipe
+#      ships are built from Vartheme BS5 components only (see #3622810), so the
 #      job installs no site-template theme: a base recipe's pipeline must not
 #      depend on one.
-#   2. It provisions page displays for the listing and the related display.
-#      This recipe ships the podcasts view with block displays only, on purpose
-#      (the landing page belongs to the site template), so the harness adds
-#      /podcasts and /podcasts-related-test/<tag>/<episode>. Both are test-site
-#      provisioning, not recipe configuration.
+#   2. It provisions page displays for the listings and the related display.
+#      This recipe ships its views with block displays only, on purpose (the
+#      landing pages belong to the site template), so the harness adds
+#      /podcasts, /podcast-episodes and /podcasts-related-test/<tag>/<episode>.
+#      All are test-site provisioning, not recipe configuration.
 ################################################################################
 
 stages:
@@ -270,16 +270,18 @@ recipe:
       seed_user "SEO admin"      "test.seo_admin@vardot.com"      "seo_admin"
       seed_user "Site admin"     "test.site_admin@vardot.com"     "site_admin"
       seed_user "Super admin"    "test.super_admin@vardot.com"    "administrator"
-    # Seed the deterministic test content (15 example episodes, 12 referencing
-    # one uploaded Audio media item and 3 with no audio, one shared tag and one
-    # cover-art media item) that the listing, pager, filter, related and audio
+    # Seed the deterministic test content (two example podcasts and 15 example
+    # episodes, 10 in the first and 5 in the second; 12 referencing one uploaded
+    # Audio media item and 3 with no audio, one shared tag and one cover-art
+    # media item) that the listing, show, pager, filter, related and audio
     # scenarios assert against. A testing-only recipe applied with `drush
     # recipe`, not a PHP fixture.
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" recipe "$CI_PROJECT_DIR/tests/recipes/varbase_podcasts_base_test_content"
-    # Provision the listing and the related display, harness only: the recipe
-    # ships the podcasts view with block displays and no page display on
-    # purpose. tests/scripts/provision-test-pages.php adds /podcasts and
-    # /podcasts-related-test/<tag>/<episode>, so a local run uses the same page.
+    # Provision the listings and the related display, harness only: the recipe
+    # ships its views with block displays and no page display on purpose.
+    # tests/scripts/provision-test-pages.php adds /podcasts, /podcast-episodes
+    # and /podcasts-related-test/<tag>/<episode>, so a local run uses the same
+    # pages.
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" php:script "$CI_PROJECT_DIR/tests/scripts/provision-test-pages.php"
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" cache:rebuild
     # Point Apache at the Drupal docroot, honour its .htaccess (clean URLs) and
@@ -302,14 +304,14 @@ recipe:
     # clear the watchdog so the health check below shows only fresh errors.
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" config:set system.logging error_level verbose -y || true
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" watchdog:delete all -y || true
-    # Health-check the listing and one episode page before the suite: a non-200
-    # on either means the recipe left a broken view or view display, so fail
-    # fast and surface the real error instead of a wall of red scenarios.
+    # Health-check the listings, one show and one episode page before the suite:
+    # a non-200 on any means the recipe left a broken view or view display, so
+    # fail fast and surface the real error instead of a wall of red scenarios.
     - |
-      for path in "/podcasts" "/podcast/varbase-example-episode-01"; do
+      for path in "/podcasts" "/podcast-episodes" "/podcasts/varbase-example-podcast-one" "/podcasts/varbase-example-podcast-one/varbase-example-episode-01"; do
         code=$(curl -s -L -o /tmp/page.html -w "%{http_code}" "$LAUNCH_URL$path")
         echo "$path -> HTTP $code  title: $(grep -aoiE '<title>[^<]*</title>' /tmp/page.html | head -1)"
-        echo "$path carries the episode title: $(grep -ac 'Varbase Example Episode 01' /tmp/page.html || true)"
+        echo "$path carries an example title: $(grep -acE 'Varbase Example (Podcast One|Episode 01)' /tmp/page.html || true)"
         if [ "$code" != "200" ]; then
           echo "$path did not return 200, page exception:"
           grep -aioE "(PluginNotFoundException|Exception[^<]{0,180}|Error:[^<]{0,180}|in [^ <]+\.php on line [0-9]+|does not exist[^<]{0,120}|no such[^<]{0,120})" /tmp/page.html | head -15 || true

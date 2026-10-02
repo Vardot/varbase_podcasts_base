@@ -5,13 +5,11 @@ dependencies:
     - field.storage.node.field_audio
     - media.type.audio
     - media.type.remote_audio
-    - node.type.podcast
-  module:
-    - media
-id: node.podcast.field_audio
+    - node.type.podcast_episode
+id: node.podcast_episode.field_audio
 field_name: field_audio
 entity_type: node
-bundle: podcast
+bundle: podcast_episode
 label: Audio
 description: 'The episode audio: an uploaded audio file, or audio hosted on SoundCloud, Spotify or Apple Podcasts.'
 required: false
@@ -30,3 +28,4 @@ settings:
     auto_create: false
     auto_create_bundle: ''
 field_type: entity_reference
+

@@ -7,7 +7,8 @@ Feature: Podcasts Base - Editing an episode and removing its audio
   @regression @local @development @staging
   Scenario: Editing an episode keeps the audio it references
     Given I am a logged in user with the "Content editor" user
-     When I go to "/node/add/podcast"
+     When I go to "/node/add/podcast_episode"
+      And I assign the episode to the "Varbase Example Podcast One" podcast
       And I fill in "Title" with "Varbase Example Keep Audio Episode 74508"
       And I fill in "Summary" with "Summary for the keep audio test episode 74508."
       And I add the first available cover art from the media library
@@ -26,7 +27,8 @@ Feature: Podcasts Base - Editing an episode and removing its audio
   @regression @local @development @staging
   Scenario: Deleting the audio media leaves the episode page readable
     Given I am a logged in user with the "Content editor" user
-     When I go to "/node/add/podcast"
+     When I go to "/node/add/podcast_episode"
+      And I assign the episode to the "Varbase Example Podcast One" podcast
       And I fill in "Title" with "Varbase Example Lost Audio Episode 74509"
       And I fill in "Summary" with "Summary for the lost audio test episode 74509."
       And I add the first available cover art from the media library
@@ -37,7 +39,7 @@ Feature: Podcasts Base - Editing an episode and removing its audio
      Then the episode page should play media from "varbase-example-upload-episode"
      When I delete the "varbase-example-upload-episode.mp3" media item
      Then I should see "has been deleted"
-     When I go to "/podcast/varbase-example-lost-audio-episode-74509"
+     When I go to "/podcasts/varbase-example-podcast-one/varbase-example-lost-audio-episode-74509"
      Then the page title should contain "Varbase Example Lost Audio Episode 74509 | "
       And I should see "Summary for the lost audio test episode 74509."
       And the podcast episode page should offer no audio
