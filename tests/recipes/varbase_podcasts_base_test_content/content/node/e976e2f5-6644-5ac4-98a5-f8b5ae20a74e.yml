@@ -72,3 +72,8 @@ default:
   field_podcast:
     -
       entity: 9a04c1bc-874a-5fa4-86b3-cbba60c8f4de
+  field_listen_links:
+    -
+      uri: 'https://open.spotify.com/episode/varbase-example-episode-02'
+      title: Spotify
+      options: {  }

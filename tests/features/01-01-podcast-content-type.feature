@@ -30,6 +30,7 @@ Feature: Podcasts Base - Podcast and Podcast episode content types
       And the field "Summary" should be empty
       And I should see "Cover art"
       And I should see "Add media"
+      And I should see "Listen on"
 
   @regression @local @development @staging @production
   Scenario: The Audio tab offers the Audio field as a media reference, not a file upload or a link

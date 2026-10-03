@@ -5,9 +5,10 @@
  * Test-site provisioning for the functional suite, not recipe configuration.
  *
  * The recipe ships its views with block displays only, because the podcasts
- * landing pages belong to the site template. This adds three page displays for
+ * landing pages belong to the site template. This adds four page displays for
  * the scenarios: /podcasts (the shows), /podcast-episodes (every episode, with
- * the filters and the pager) and /podcasts-related-test/<tag>/<episode>.
+ * the filters and the pager), /podcasts-related-test/<tag>/<episode> and
+ * /podcasts-listen-on-test/<episode>.
  *
  * Usage: drush php:script tests/scripts/provision-test-pages.php
  */
@@ -54,6 +55,8 @@ podcasts_test_add_page('podcasts', 'all', 'page_test', 'Podcasts test listing', 
 podcasts_test_add_page('podcast_episodes', 'all', 'page_test', 'Podcast episodes test listing', 'podcast-episodes', 'Podcast episodes');
 // The first argument is the tag, the second the episode to exclude.
 podcasts_test_add_page('podcast_episodes', 'related', 'page_related_test', 'Related podcast episodes test page', 'podcasts-related-test/%/%');
+// The argument is the episode whose platform links are listed.
+podcasts_test_add_page('podcast_episodes', 'listen_on', 'page_listen_on_test', 'Listen on test page', 'podcasts-listen-on-test/%');
 \Drupal::service('router.builder')->rebuild();
 
 // An alias per seeded episode gives each "tag context" a stable URL.
@@ -76,4 +79,16 @@ foreach (['01', '14'] as $nn) {
   ])->save();
   print 'related context for episode ' . $nn . ': tag ' . $tid . ', excluding node ' . $node->id() . "\n";
 }
-print "provisioned: /podcasts, /podcast-episodes and /podcasts-related-test page displays\n";
+foreach (['01', '02'] as $nn) {
+  if ($aliases->loadByProperties(['alias' => '/podcasts-listen-on-test/episode-' . $nn])) {
+    continue;
+  }
+  $found = $nodes->loadByProperties(['type' => 'podcast_episode', 'title' => 'Varbase Example Episode ' . $nn]);
+  $node = reset($found);
+  $aliases->create([
+    'path' => '/podcasts-listen-on-test/' . $node->id(),
+    'alias' => '/podcasts-listen-on-test/episode-' . $nn,
+    'langcode' => 'en',
+  ])->save();
+}
+print "provisioned: /podcasts, /podcast-episodes, /podcasts-related-test and /podcasts-listen-on-test page displays\n";

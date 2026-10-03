@@ -953,3 +953,21 @@ After(async function () {
     console.warn(`Podcasts cleanup could not purge everything it created: ${error.message}`);
   }
 });
+
+/**
+ * Assert the page offers, or does not offer, a "Listen on" link to a URL.
+ *
+ * Example #1: Then the page should link to "https://open.spotify.com/show/varbase-example-podcast-one"
+ * Example #2: And the page should not link to "https://podcasts.apple.com/podcast/varbase-example-podcast-one"
+ * Example #3: Then the page should link to "https://open.spotify.com/episode/varbase-example-episode-02"
+ * Example #4: And the page should not link to "https://open.spotify.com/show/varbase-example-podcast-one"
+ * Example #5: Then the page should link to "https://podcasts.apple.com/podcast/varbase-example-podcast-two"
+ */
+Then(/^the page should (not )?link to "([^"]*)"$/, async function (not, url) {
+  const count = await this.page.locator(`main a[href="${url}"]`).count();
+  if (not) {
+    assert.strictEqual(count, 0, friendly(`Expected no link to ${url}.`, `Found ${count}.`));
+  } else {
+    assert.ok(count > 0, friendly(`Expected a link to ${url}.`, 'None was found in the main content.'));
+  }
+});

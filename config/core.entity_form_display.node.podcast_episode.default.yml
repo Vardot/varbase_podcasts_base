@@ -9,14 +9,17 @@ dependencies:
     - field.field.node.podcast_episode.field_episode_number
     - field.field.node.podcast_episode.field_featured_image
     - field.field.node.podcast_episode.field_host
+    - field.field.node.podcast_episode.field_listen_links
     - field.field.node.podcast_episode.field_podcast
     - field.field.node.podcast_episode.field_tags
     - node.type.podcast_episode
+    - workflows.workflow.varbase_editorial_workflow
   module:
     - advanced_text_formatter
     - content_moderation
     - field_group
     - length_indicator
+    - link
     - media_library
     - path
     - tagify
@@ -28,6 +31,7 @@ third_party_settings:
         - moderation_state
         - title
         - field_description
+        - field_listen_links
         - field_featured_image
         - field_content
       label: General
@@ -197,6 +201,14 @@ content:
     settings:
       size: 60
       placeholder: ''
+    third_party_settings: {  }
+  field_listen_links:
+    type: link_default
+    weight: 3
+    region: content
+    settings:
+      placeholder_url: 'https://'
+      placeholder_title: Spotify
     third_party_settings: {  }
   field_podcast:
     type: entity_reference_autocomplete
