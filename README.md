@@ -1,8 +1,8 @@
 [![Varbase](https://raw.githubusercontent.com/Vardot/varbase/11.0.x/images/varbase-logo.png)](https://www.drupal.org/project/varbase)
 
 # Varbase Podcasts Base
-[![pipeline status](https://git.drupalcode.org/project/varbase_podcasts_base/badges/1.0.x/pipeline.svg)](https://git.drupalcode.org/project/varbase_podcasts_base/-/pipelines)
-[![Varbase Podcasts Base](https://img.shields.io/badge/Varbase%20Podcasts%20Base-1.0.0-0d6efc?labelColor=001d38&style=flat-square)](https://git.drupalcode.org/project/varbase_podcasts_base/-/pipelines?ref=1.0.0)
+[![pipeline status](https://git.drupalcode.org/project/varbase_podcasts_base/badges/2.0.x/pipeline.svg)](https://git.drupalcode.org/project/varbase_podcasts_base/-/pipelines)
+[![Varbase Podcasts Base](https://img.shields.io/badge/Varbase%20Podcasts%20Base-2.0.0-0d6efc?labelColor=001d38&style=flat-square)](https://git.drupalcode.org/project/varbase_podcasts_base/-/pipelines?ref=2.0.0)
 [![Automated Functional Testing](https://git.drupalcode.org/project/varbase_project/badges/11.0.x/pipeline.svg)](https://git.drupalcode.org/project/varbase_project/-/pipelines)
 
 A recipe to provide a podcast episode content type, listing view, and related configuration for Varbase. Use Podcasts to publish audio episodes with a summary, cover art, show notes, duration and episode number in the Podcasts section of the site.

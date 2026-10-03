@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-03
+This is a new major: the content model changed and there is no upgrade path.
+Sites that already hold `podcast` nodes from 1.0.x are not migrated; stay on
+`~1.0.0` until a migration exists.
+
+### Changed
+- **Breaking:** Podcast is now the show, and a new Podcast episode content type
+  holds the episodes, each with a required reference to its podcast. Audio,
+  duration and episode number moved from Podcast to Podcast episode (#3622954).
+- Views displays, Canvas content templates and the Pathauto pattern
+  `/podcasts/[show]/[episode]` follow the show and episode model (#3622954).
+
+### Added
+- Editors can add "Listen on" links on an episode; the podcast's links show when
+  the episode has none (#3627732).
+
 ## [1.0.0] - 2026-09-24
 ### Changed
 - Usage scenarios in the Varbase functional testing suite, on varbase-e2e 2.0.7 (#3625560).
@@ -66,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environment happens to create, so a podcast renders and is indexed the same way
   on every site.
 
-[Unreleased]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/1.0.0...1.0.x
+[Unreleased]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.0...2.0.x
+[2.0.0]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/1.0.0...2.0.0
 [1.0.0]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/1.0.0-alpha1...1.0.0
 [1.0.0-alpha1]: https://git.drupalcode.org/project/varbase_podcasts_base/-/tags/1.0.0-alpha1

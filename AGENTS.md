@@ -26,18 +26,25 @@ Read the project history and context first:
 
 ## What belongs here, and what does not
 
-This recipe owns the **podcast episode content model** and nothing above it.
+This recipe owns the **podcast show and episode content model** and nothing above it.
 
 **Belongs here**
 
-- The `podcast` content type, its fields, and the three field storages this recipe
-  owns: `field_audio`, `field_duration`, `field_episode_number`.
-- Form and view displays for the episode, and the Canvas content template for the
-  full view mode, built on Vartheme BS5. Keep it: Varbase Content Base otherwise
-  creates an empty full-view template and every episode page renders blank.
-- `views.view.podcasts` and its block and feed displays.
-- SEO plumbing for episodes: Pathauto pattern, Simple Sitemap bundle settings.
-- Editorial workflow and role permissions for `podcast`.
+- The `podcast` content type (the show) and the `podcast_episode` content type
+  (an episode, with a required `field_podcast` reference to its show), their
+  fields, and the field storages this recipe owns: `field_audio`,
+  `field_duration`, `field_episode_number`, `field_host`, `field_listen_links`,
+  `field_podcast`.
+- Form and view displays for both types, and the Canvas content templates for
+  their full view mode, built on Vartheme BS5. Keep them: Varbase Content Base
+  otherwise creates an empty full-view template and the page renders blank.
+- `views.view.podcasts` and `views.view.podcast_episodes`, their block and feed
+  displays, and the Canvas block components that expose them.
+- SEO plumbing: the Pathauto patterns (`/podcasts/[show]/[episode]` for episodes)
+  and Simple Sitemap bundle settings.
+- Editorial workflow and role permissions for `podcast` and `podcast_episode`.
+- No upgrade path from the 1.0.x model, where `podcast` was the episode. A change
+  to the content model is a new major; say so in `CHANGELOG.md`.
 
 **Does not belong here**
 
