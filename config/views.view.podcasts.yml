@@ -274,7 +274,7 @@ display:
           table: node_field_data
           field: nid
           relationship: reverse__node__field_podcast
-          group_type: count
+          group_type: count_distinct
           entity_type: node
           entity_field: nid
           plugin_id: field
