@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-10-05
+### Fixes
+- Podcast views no longer repeat episodes or inflate the episode count on multilingual
+  sites: the More episodes block filters both of its relationships by language with a
+  distinct query, and the Episodes count is distinct (#3628164).
+
 ## [2.0.0] - 2026-10-03
 This is a new major: the content model changed and there is no upgrade path.
 Sites that already hold `podcast` nodes from 1.0.x are not migrated; stay on
