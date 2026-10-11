@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-10-11
+### Changed
+- Fix `yarn install` in CI now that Varbase Project 11.0.x-dev ships no `yarn.lock`:
+  CI creates an empty one first, so Yarn does not take this recipe's `package.json`
+  as the project root (#3630063).
+
 ## [2.0.1] - 2026-10-05
 ### Fixes
 - Podcast views no longer repeat episodes or inflate the episode count on multilingual
@@ -88,7 +94,9 @@ Sites that already hold `podcast` nodes from 1.0.x are not migrated; stay on
   environment happens to create, so a podcast renders and is indexed the same way
   on every site.
 
-[Unreleased]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.0...2.0.x
+[Unreleased]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.2...2.0.x
+[2.0.2]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.1...2.0.2
+[2.0.1]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.0...2.0.1
 [2.0.0]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/1.0.0...2.0.0
 [1.0.0]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/1.0.0-alpha1...1.0.0
 [1.0.0-alpha1]: https://git.drupalcode.org/project/varbase_podcasts_base/-/tags/1.0.0-alpha1
