@@ -35,6 +35,7 @@ variables:
   # git.drupalcode.org clones can be slow from a runner; give composer git
   # operations room instead of the 300s default so a slow fetch is not a failure.
   COMPOSER_PROCESS_TIMEOUT: "1800"
+  DRUPAL_CMS_TELEMETRY: "0"
 
 workflow:
   rules:
@@ -223,6 +224,9 @@ recipe:
     # varbase_project `postinstall` sync. Without it CKEditor 5 fails to
     # initialise and the media library breaks, which sinks the cover-art
     # scenarios.
+    # varbase_project 11.0.x-dev no longer ships a yarn.lock; an empty one keeps
+    # Yarn from taking this repo's package.json as the project root.
+    - touch yarn.lock
     - corepack enable || true
     - YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install --network-timeout 600000
     # Make the synced libraries world-readable so Apache (www-data) can serve
