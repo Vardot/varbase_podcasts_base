@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-29
+### Added
+- Add the Podcast episode content type: a podcast is a show with episodes, with views that list both ([#3622954](https://www.drupal.org/i/3622954)).
+- Editors can add Listen on links to an episode; the links of the podcast show when the episode has none ([#3627732](https://www.drupal.org/i/3627732)).
+
+### Fixed
+- Podcast views no longer repeat episodes or inflate counts on multilingual sites ([#3628164](https://www.drupal.org/i/3628164)).
+
+### Changed
+- Disable Drupal CMS telemetry in CI ([#3633840](https://www.drupal.org/i/3633840)).
+- Pin the `drupal/varbase_*` dependencies to the released `~1.0.0` and `~4.0.0` lines for the release.
+- Update the version badge to `1.0.1` in `README.md`.
+
 ## [1.0.0] - 2026-09-24
 ### Changed
 - Usage scenarios in the Varbase functional testing suite, on varbase-e2e 2.0.7 (#3625560).
@@ -66,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environment happens to create, so a podcast renders and is indexed the same way
   on every site.
 
-[Unreleased]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/1.0.0...1.0.x
+[Unreleased]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/1.0.1...1.0.x
+[1.0.1]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/1.0.0...1.0.1
 [1.0.0]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/1.0.0-alpha1...1.0.0
 [1.0.0-alpha1]: https://git.drupalcode.org/project/varbase_podcasts_base/-/tags/1.0.0-alpha1
