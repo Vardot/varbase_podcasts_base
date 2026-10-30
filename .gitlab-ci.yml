@@ -27,6 +27,7 @@
 stages:
   - validate
   - test
+  - report
 
 variables:
   DRUPAL_CORE: "11.4.0"
@@ -123,6 +124,8 @@ recipe:
   services:
     - name: mariadb:11
       alias: database
+      # A throwaway database: skip the disk syncs that slow a site install.
+      command: ["--innodb-flush-log-at-trx-commit=0", "--innodb-doublewrite=0", "--skip-log-bin"]
   variables:
     MYSQL_DATABASE: "drupal"
     MYSQL_USER: "drupal"
@@ -135,6 +138,21 @@ recipe:
     ADMIN_NAME: "webmaster"
     ADMIN_PASS: "dD.123123ddd"
     ADMIN_MAIL: "webmaster@vardot.com"
+    SLOW_MO: "0"
+    VARBASE_E2E_VIDEO: "off"
+    VARBASE_E2E_REPORT_DISABLE: "1"
+    FORCE_COLOR: "1"
+    CUCUMBER_PARALLEL: "2"
+    CUCUMBER_JSON: "cucumber_report--${SUITE}"
+  # One job per feature group, each on its own freshly built site.
+  parallel:
+    matrix:
+      - SUITE: "01-02-content-model-and-authoring"
+        FEATURES: "tests/features/{01-01,02-01,02-02,02-04,02-05}-*.feature"
+      - SUITE: "02-06-audio-workflow-and-seo"
+        FEATURES: "tests/features/{02-03,02-06,02-07,06-01}-*.feature"
+      - SUITE: "03-07-listing-access-and-accessibility"
+        FEATURES: "tests/features/{03,04,05,07}-*.feature"
   artifacts:
     when: always
     expire_in: 1 week
@@ -249,15 +267,8 @@ recipe:
         - varbase_podcasts_base
       RECIPE
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" site:install "$SITE_DIR/recipes/podcasts_base_test" --db-url="$DB_URL" --account-name="$ADMIN_NAME" --account-pass="$ADMIN_PASS" --account-mail="$ADMIN_MAIL" --site-name="Podcasts Base Test" --locale=en -y
-    - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" cache:rebuild
-    # Test-ready prep: no antibot, no aggregation. Uninstall Big Pipe: its
-    # server-side placeholder sub-requests deadlock a single-threaded server.
-    - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" pm:uninstall antibot -y || true
-    - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" pm:uninstall big_pipe -y || true
-    # Security Kit sets a Content-Security-Policy that blocks the CKEditor 5
-    # Plugin Pack scripts (loaded from cdn.ckeditor.com), causing a dead Body
-    # editor. Uninstall it for the headless test run (like antibot).
-    - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" pm:uninstall seckit -y || true
+    # Editor-only helpers off: antibot, shared Autosave drafts, Editoria11y timers, the Security Kit CSP.
+    - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" pm:uninstall antibot autosave_form editoria11y seckit -y
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" config:set system.performance css.preprocess 0 -y || true
     - bash "$SITE_DIR/bin/drush" --root="$WEB_ROOT" config:set system.performance js.preprocess 0 -y || true
     # Seed the testing users. The account NAME must be the human role label
@@ -327,4 +338,24 @@ recipe:
     - cd "$CI_PROJECT_DIR"
     # @external posts a real provider URL to SoundCloud's oEmbed endpoint, which
     # a network-isolated runner cannot reach; run it locally, not here.
-    - BROWSER=chromium node ./node_modules/@cucumber/cucumber/bin/cucumber.js --config cucumber.js --tags "not @wip and not @external" --retry 1
+    - echo "$SUITE on $(nproc) CPUs, $(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo) MB, $CUCUMBER_PARALLEL workers"
+    - BROWSER=chromium node ./node_modules/@cucumber/cucumber/bin/cucumber.js --config cucumber.js --tags "not @wip and not @external" --retry 1 --parallel "$CUCUMBER_PARALLEL"
+
+# Merge every test job's cucumber JSON into one HTML and PDF report.
+"📊 Create reports":
+  stage: report
+  image: node:22
+  when: always
+  dependencies:
+    - "🧪 Automated Functional Testing"
+  script:
+    - npm install --no-audit --no-fund
+    - npx playwright install --with-deps chromium
+    - node -e "const fs=require('fs');const d='tests/reports/';const all=fs.readdirSync(d).filter(f=>/^cucumber_report--.*\.json$/.test(f)).flatMap(f=>JSON.parse(fs.readFileSync(d+f)));fs.writeFileSync(d+'cucumber_report.json',JSON.stringify(all))"
+    - export REPORT="varbase-podcasts-base--${CI_COMMIT_REF_SLUG}--automated-functional-testing-report--$(date +%Y-%m-%d--%H-%M)"
+    - node ./node_modules/@vardot/varbase-e2e/bin/generate-reports.js --json tests/reports/cucumber_report.json --out "tests/reports/${REPORT}.html" --format all --pdf-out "tests/reports/${REPORT}.pdf"
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - tests/reports/

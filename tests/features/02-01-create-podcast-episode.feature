@@ -8,7 +8,7 @@ Feature: Podcasts Base - Authoring a podcast episode
   Scenario: A Content editor creates a podcast episode and its page shows what was entered
     Given I am a logged in user with the "Content editor" user
      When I go to "/node/add/podcast_episode"
-      And I assign the episode to the "Varbase Example Podcast One" podcast
+      And I assign the episode to the "Varbase Example Authoring Podcast" podcast
       And I fill in "Title" with "Varbase Example Authoring Episode 74501"
       And I fill in "Summary" with "Short summary for the authoring test episode 74501."
       And I add the first available cover art from the media library
@@ -22,7 +22,7 @@ Feature: Podcasts Base - Authoring a podcast episode
       And I see visible episode cover art
      When I open the edit form for the podcast episode I am viewing
       And I open the "Audio" tab on the podcast form
-     Then "#edit-field-episode-number-0-value" should have value "74501"
-     When I go to "/podcasts/varbase-example-podcast-one/varbase-example-authoring-episode-74501"
+     Then the field "Episode number" should have the value "74501"
+     When I go to "/podcasts/varbase-example-authoring-podcast/varbase-example-authoring-episode-74501"
       And I delete the podcast episode I am viewing
      Then I should see "has been deleted"

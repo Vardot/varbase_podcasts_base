@@ -13,11 +13,11 @@ tests/
 │   ├── 01-01-podcast-content-type.feature        # both add forms, the Audio tab, the required Podcast
 │   ├── 02-01-create-podcast-episode.feature      # create an episode, check its page
 │   ├── 02-02-edit-podcast-episode.feature        # edit an episode, reload, check
-│   ├── 02-03-episode-with-local-audio-media.feature   # pick or upload an mp3; the player loads it
+│   ├── 02-03-episode-with-local-audio-media.feature   # upload an mp3, the player loads it, an edit keeps it
 │   ├── 02-04-episode-with-remote-audio-media.feature  # the Remote audio media type
 │   ├── 02-05-episode-without-audio.feature       # no audio: the field is optional
-│   ├── 02-06-editorial-workflow.feature          # editor drafts, admin publishes, listing shows it
-│   ├── 02-07-editing-and-removing-audio.feature  # edits keep the audio; a deleted audio is survivable
+│   ├── 02-06-editorial-workflow.feature          # editor picks audio, admin publishes, listing shows it
+│   ├── 02-07-editing-and-removing-audio.feature  # a deleted audio leaves the episode readable
 │   ├── 03-01-podcasts-listing.feature            # episode cards, newest first, result summary, filters
 │   ├── 03-02-podcasts-filter.feature             # keyword and tag filters
 │   ├── 03-03-podcasts-pager.feature              # 12 per page, the Next page link
@@ -28,7 +28,7 @@ tests/
 │   ├── 05-01-unpublished-episode-visibility.feature  # drafts stay out of the listing, search and sitemap
 │   ├── 06-01-episode-seo.feature                 # title tag, meta description, canonical, alias
 │   └── 07-01-podcasts-accessibility.feature      # both listings, a show page and an episode page
-├── assets/                                    # the upload fixture (a two second mp3)
+├── assets/                                    # the upload fixtures (two second mp3s)
 ├── recipes/varbase_podcasts_base_test_content/   # the seeded podcasts and episodes
 ├── scripts/provision-test-pages.php           # the listing and related test pages
 ├── selectors/podcasts.json                    # named selectors
@@ -52,15 +52,17 @@ npx cucumber-js --config cucumber.js --tags "@external"
 
 ## Test data and cleanup
 
-The seed recipe creates two published podcasts, `Varbase Example Podcast One`
-and `Two`, and 15 published episodes, `Varbase Example Episode 01` to `15`,
+The seed recipe creates three published podcasts, `Varbase Example Podcast One`,
+`Two` and `Varbase Example Authoring Podcast`, and 15 published episodes, `Varbase Example Episode 01` to `15`,
 sharing one tag and one cover image. Episodes 01 to 10 belong to Podcast One and
 11 to 15 to Podcast Two, so an episode lives at
 `/podcasts/varbase-example-podcast-one/varbase-example-episode-01`. Episode 01
 is the newest, so 01 to 12 are page 1 of the episodes listing. Episodes 01 to 12
 reference one uploaded audio file; 13 to 15 have no audio.
 
-Each authoring scenario creates its own episode, in Podcast One, and its media. An `After` hook in
+Each authoring scenario creates its own episode, in the Authoring Podcast, and
+its media, so the counts and listings the other scenarios read stay the same
+while they run side by side. An `After` hook in
 `podcasts.steps.js` logs in as the webmaster and purges them, pass or fail.
 Varbase sends deleted content to the trash, where it keeps its URL alias, so a
 plain delete is not enough for a re-run on the same site.
@@ -105,4 +107,9 @@ media need PHP assertions off (`zend.assertions = -1`), as on any production
 site; see `.gitlab-ci.yml`.
 
 CI builds the same site, seeds it and runs every scenario except `@external` on
-each pipeline. See `.gitlab-ci.yml`.
+each pipeline, three at a time (`CUCUMBER_PARALLEL`), with `SLOW_MO=0` and no
+video. See `.gitlab-ci.yml`. To run it the same way locally:
+
+```bash
+SLOW_MO=0 LAUNCH_URL=https://your-site.ddev.site npm run test:chromium -- --parallel 3
+```

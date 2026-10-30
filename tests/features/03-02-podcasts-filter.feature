@@ -21,7 +21,7 @@ Feature: Podcasts Base - Podcasts listing filters
       And I fill in "Search by" with "Varbase Example Episode 07"
       And I press "Apply Filter"
      Then the podcasts result summary should show a total of 1
-      And ".podcast-episode--card" should have a count of 1
+      And the podcasts listing should show 1 episode card
       And I should see "Varbase Example Episode 07"
       And I should not see "Varbase Example Episode 08"
 
@@ -29,7 +29,7 @@ Feature: Podcasts Base - Podcasts listing filters
   Scenario: Filtering the podcasts listing by tag keeps the episodes carrying that tag
     Given I am an anonymous user
      When I go to "/podcast-episodes?search=Varbase+Example+Episode"
-      And I select "Varbase Example Podcast Tag" from "industry"
+      And I filter the podcasts by the "Varbase Example Podcast Tag" tag
       And I press "Apply Filter"
      Then current url should have the "industry" parameter
       And the podcasts result summary should show a total of 15

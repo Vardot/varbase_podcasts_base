@@ -19,8 +19,7 @@ Feature: Podcasts Base - Remote audio on an episode
      When I go to "/media/add/remote_audio"
      Then I should see "Audio URL"
       And I see visible remote audio url field
-      And "#edit-field-media-oembed-audio-0-value" should be editable
-      And the field "#edit-field-media-oembed-audio-0-value" should be required
+      And the field "Audio URL" should be required
 
   @external @local @development
   Scenario: A Content editor creates a Remote audio media item from a live provider URL

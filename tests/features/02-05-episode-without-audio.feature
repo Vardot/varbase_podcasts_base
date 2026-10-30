@@ -8,7 +8,7 @@ Feature: Podcasts Base - An episode with no audio at all
   Scenario: A Content editor saves an episode with no audio media referenced
     Given I am a logged in user with the "Content editor" user
      When I go to "/node/add/podcast_episode"
-      And I assign the episode to the "Varbase Example Podcast One" podcast
+      And I assign the episode to the "Varbase Example Authoring Podcast" podcast
       And I fill in "Title" with "Varbase Example No Audio Episode 74505"
       And I fill in "Summary" with "Summary for the no-audio test episode 74505."
       And I add the first available cover art from the media library

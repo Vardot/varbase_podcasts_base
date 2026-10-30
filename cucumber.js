@@ -1,41 +1,18 @@
-// cucumber-js configuration for the Varbase Podcasts Base functional testing suite.
-//
-// Drives the podcasts recipe through the browser (Playwright + Cucumber-js via
-// varbase-e2e >= 2.0.7). Feature files live flat in tests/features/: one recipe,
-// no per-feature subfolders.
-//   yarn test                # all features (tests/features/*.feature)
-//   yarn test:chromium       # force chromium
-//   yarn test:headed         # headed debug run
-//   FEATURES="tests/features/03-01-podcasts-listing.feature" yarn test:chromium
-//
-// Point the suite at a running site with LAUNCH_URL (falls back to
-// DDEV_PRIMARY_URL). Reports land in tests/reports/. Disable the auto HTML hook
-// with VARBASE_E2E_REPORT_DISABLE=1 and run `yarn generate-reports` in CI instead.
+// Varbase Podcasts Base functional testing suite; usage and tags in tests/README.md.
 
 module.exports = {
   default: {
-    // Cucumber step timeout must exceed Playwright's default 30s so the
-    // try/catch wrappers in the step files surface a friendly Playwright
-    // error before cucumber's raw "function timed out".
     timeout: 60000,
-    // Retry once. Late scenarios occasionally trip a step/assertion timeout
-    // purely from cumulative load on a heavy Varbase site (not a real defect).
-    // One retry absorbs those transient timeouts. Override with --retry N.
     retry: 1,
-    // tsx/cjs registers a require() hook so cucumber-js loads both `.js`
-    // and `.ts` step files with no build step.
     requireModule: ['tsx/cjs'],
     require: [
       'node_modules/@vardot/varbase-e2e/tests/step-definitions/**/*.js', // Varbase E2E core step definitions.
       'tests/step-definitions/**/*.js',                         // Podcasts Base custom step definitions.
     ],
-    // FEATURES lets you run a single feature file (e.g.
-    // FEATURES="tests/features/03-01-podcasts-listing.feature"); unset runs the
-    // whole flat suite.
     paths: [process.env.FEATURES || 'tests/features/*.feature'],
     format: [
       'progress-bar',
-        'summary',
+      'summary',
       'json:tests/reports/' + (process.env.CUCUMBER_JSON || 'cucumber_report') + '.json',
     ],
     formatOptions: {
@@ -50,10 +27,7 @@ module.exports = {
     },
     worldParameters: {
       launchUrl: process.env.LAUNCH_URL || process.env.DDEV_PRIMARY_URL || 'https://localhost',
-      // Per-role testing users, keyed by human role name. Seeded on the site by
-      // `ddev init-minimal-automated-testing` (add-testing-users). Step text
-      // references users by these labels, so they must stay in sync with the
-      // seeded accounts.
+      // Testing users by role label; the CI job seeds the same accounts.
       users: {
         "webmaster": {
           "username": "webmaster",
@@ -86,8 +60,6 @@ module.exports = {
         }
       },
       minWaitTime: {
-        // Per-navigation settle budget. Heavy Varbase admin pages (Gin +
-        // media library) need time to render before the next assertion runs.
         page: 8000,
         before_scenario: 0,
         after_scenario: 0,
@@ -122,16 +94,12 @@ module.exports = {
         infoTypes: '',
       },
       video: {
-        // 'off' | 'on' | 'on-failure' | 'tag'. Override per run with VARBASE_E2E_VIDEO.
         mode: process.env.VARBASE_E2E_VIDEO || 'on-failure',
         dir: './tests/videos',
         size: { width: 1920, height: 1080 },
         filenamePattern: '{datetime}.{feature_file}.{scenario}.{status}.{ext}',
       },
       javascript: {
-        // Report collected JavaScript console/page errors at scenario end.
-        // 'warn' logs but the scenario still passes; do NOT tag scenarios
-        // @javascript (that forces 'fail' mode in varbase-e2e).
         mode: process.env.VARBASE_E2E_JS_ERROR_MODE || 'warn',
         levels: ['error'],
         ignore: '',

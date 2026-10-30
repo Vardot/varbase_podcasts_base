@@ -1,9 +1,9 @@
 'use strict';
 
-const { When, Then, After, AfterStep, setDefaultTimeout } = require('@cucumber/cucumber');
+const { When, Then, After, AfterStep, BeforeStep, setDefaultTimeout } = require('@cucumber/cucumber');
 const assert = require('assert');
 
-const { smartSettle, friendly } = require('@vardot/varbase-e2e/tests/step-definitions/varbase-e2e');
+const { friendly } = require('@vardot/varbase-e2e/tests/step-definitions/varbase-e2e');
 
 // -----------------------------------------------------------------------------
 // Custom steps for the Varbase Podcasts Base recipe.
@@ -34,6 +34,37 @@ const { smartSettle, friendly } = require('@vardot/varbase-e2e/tests/step-defini
 setDefaultTimeout(90000);
 
 const budgetOf = (world) => (world.minWaitTime && world.minWaitTime.page) || 8000;
+
+/**
+ * Wait until the form is quiet: no Drupal AJAX or fetch in flight and no DOM
+ * change for 250 ms. Pending timers are not counted: the editor form keeps a
+ * 100 ms CKEditor image polling loop running, so it never has none.
+ */
+async function settleForm(page, budget) {
+  await page.waitForFunction(() => {
+    const ajax = window.__varbaseE2eAjaxCount;
+    const last = window.__varbaseE2eLastMutation;
+    if (typeof ajax === 'number' && ajax > 0) return false;
+    if (window.jQuery && window.jQuery.active > 0) return false;
+    if (typeof last === 'number' && Date.now() - last < 250) return false;
+    return true;
+  }, null, { timeout: budget, polling: 50 }).catch(() => {});
+}
+
+/**
+ * Click the form's #edit-submit, wait for the page it navigates to, then settle.
+ */
+async function submitAndSettle(page, budget, prepare) {
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {}),
+    page.evaluate((noValidate) => {
+      const el = document.getElementById('edit-submit');
+      if (el && el.form && noValidate) el.form.noValidate = true;
+      if (el) el.click();
+    }, !!prepare),
+  ]);
+  await settleForm(page, budget);
+}
 
 /**
  * Resolve a named selector from the registry (tests/selectors/podcasts.json),
@@ -92,8 +123,19 @@ async function dismissAutosaveDialog(page, budget) {
     await dialog.locator('.ui-dialog-titlebar-close').first().click();
   }
   await page.locator('.ui-dialog.autosave-dialog').first().waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
-  await smartSettle(page, budget);
+  await settleForm(page, budget);
 }
+
+/**
+ * Block the third-party spellchecker the CKEditor 5 Plugin Pack loads on every
+ * editor form. It is not part of this recipe, and its network calls and timers
+ * hold every settle on the form for seconds.
+ */
+BeforeStep(async function () {
+  if (this.podcastsThirdPartyBlocked || !this.context) return;
+  this.podcastsThirdPartyBlocked = true;
+  await this.context.route('**://svc.webspellchecker.net/**', (route) => route.abort());
+});
 
 /**
  * Discard a leftover Autosave Form draft as soon as an episode form opens, so
@@ -162,7 +204,7 @@ When(/^(?:I |we )*open the "([^"]*)" tab on the podcast form$/, async function (
     .first();
   if (await tab.count()) {
     await tab.click();
-    await smartSettle(this.page, budgetOf(this));
+    await settleForm(this.page, budgetOf(this));
     return;
   }
 
@@ -182,7 +224,7 @@ When(/^(?:I |we )*open the "([^"]*)" tab on the podcast form$/, async function (
       'Check the field_group labels in core.entity_form_display.node.podcast_episode.default.yml.'
     );
   }
-  await smartSettle(this.page, budgetOf(this));
+  await settleForm(this.page, budgetOf(this));
 });
 
 /**
@@ -201,11 +243,15 @@ When(/^(?:I |we )*open the "([^"]*)" tab on the podcast form$/, async function (
 When(/^(?:I |we )*save the podcast episode$/, async function () {
   await assertOnPodcastForm(this.page);
   const creating = /\/node\/add\/podcast/.test(this.page.url());
-  await this.page.evaluate(() => {
-    const el = document.getElementById('edit-submit');
-    if (el) el.click();
-  });
-  await smartSettle(this.page, budgetOf(this));
+  const onForm = (u) => /\/node\/add\/podcast/.test(u) || /\/node\/\d+\/edit/.test(u);
+  await Promise.all([
+    this.page.waitForURL((u) => !onForm(u.toString()), { timeout: 45000, waitUntil: 'domcontentloaded' }).catch(() => {}),
+    this.page.evaluate(() => {
+      const el = document.getElementById('edit-submit');
+      if (el) el.click();
+    }),
+  ]);
+  await settleForm(this.page, budgetOf(this));
   const url = this.page.url();
   if (/\/node\/add\/podcast/.test(url) || /\/node\/\d+\/edit/.test(url)) {
     const errors = await this.page.evaluate(() =>
@@ -224,7 +270,8 @@ When(/^(?:I |we )*save the podcast episode$/, async function () {
 
 /**
  * Submit the current Podcast episode form (clicks ONLY #edit-submit) without
- * expecting it to save, for scenarios that assert a validation error.
+ * expecting it to save, for scenarios that assert a validation error. Browser
+ * validation is switched off first, so the site's own validation answers.
  *
  * Example #1: When I try to save the podcast episode
  * Example #2: And I try to save the podcast episode
@@ -234,11 +281,7 @@ When(/^(?:I |we )*save the podcast episode$/, async function () {
  */
 When(/^(?:I |we )*try to save the podcast episode$/, async function () {
   await assertOnPodcastForm(this.page);
-  await this.page.evaluate(() => {
-    const el = document.getElementById('edit-submit');
-    if (el) el.click();
-  });
-  await smartSettle(this.page, budgetOf(this));
+  await submitAndSettle(this.page, budgetOf(this), true);
   const nid = /\/node\/add\/podcast/.test(this.page.url()) ? null : await currentEpisodeNid(this.page);
   if (nid) trackForCleanup(this, 'node', nid);
 });
@@ -268,7 +311,7 @@ When(/^(?:I |we )*assign the episode to the "([^"]*)" podcast$/, async function 
     throw friendly(`The Podcast field offered no "${title}" suggestion.`, 'Check the podcast exists and is published.');
   });
   await suggestion.click();
-  await smartSettle(this.page, budget);
+  await settleForm(this.page, budget);
   const value = await field.inputValue();
   assert.ok(
     value.startsWith(title),
@@ -343,7 +386,7 @@ async function openMediaLibrary(page, label, budget) {
   }
   await openButton.click();
   await page.locator(MEDIA_MODAL).first().waitFor({ state: 'visible', timeout: 30000 });
-  await smartSettle(page, budget);
+  await settleForm(page, budget);
 }
 
 /**
@@ -370,7 +413,7 @@ async function switchMediaType(page, type, budget) {
     .first();
   if (!(await tab.count())) return false;
   await tab.click();
-  await smartSettle(page, budget);
+  await settleForm(page, budget);
   await page.locator(MEDIA_ITEM).first().waitFor({ state: 'attached', timeout: 10000 }).catch(() => {});
   return true;
 }
@@ -387,14 +430,14 @@ async function insertFirstMediaItem(page, budget, what) {
     );
   });
   await firstItem.check({ force: true });
-  await smartSettle(page, budget);
+  await settleForm(page, budget);
 
   const insert = page.locator(
     '.ui-dialog-buttonpane button:has-text("Insert selected"), .media-library-widget-modal button:has-text("Insert selected"), [role="dialog"] button:has-text("Insert selected")'
   ).first();
   await insert.waitFor({ state: 'visible', timeout: 20000 });
   await insert.click();
-  await smartSettle(page, budget);
+  await settleForm(page, budget);
 }
 
 /**
@@ -523,7 +566,7 @@ Then(/^the "([^"]*)" field should show the selected media item "([^"]*)"$/, asyn
 When(/^(?:I |we )*delete the "([^"]*)" media item$/, async function (name) {
   const base = this.launchUrl.replace(/\/$/, '');
   await this.page.goto(`${base}/admin/content/media`, { waitUntil: 'domcontentloaded' });
-  await smartSettle(this.page, budgetOf(this));
+  await settleForm(this.page, budgetOf(this));
 
   const mid = await this.page.evaluate((wanted) => {
     const row = [...document.querySelectorAll('tr')].find((tr) => (tr.textContent || '').includes(wanted));
@@ -543,11 +586,7 @@ When(/^(?:I |we )*delete the "([^"]*)" media item$/, async function (name) {
   if (!onDelete) {
     throw friendly(`Expected the media delete confirm form, but got "${this.page.url()}".`);
   }
-  await this.page.evaluate(() => {
-    const el = document.getElementById('edit-submit');
-    if (el) el.click();
-  });
-  await smartSettle(this.page, budgetOf(this));
+  await submitAndSettle(this.page, budgetOf(this));
 });
 
 /**
@@ -565,7 +604,7 @@ When(/^(?:I |we )*open the edit form for the podcast episode I am viewing$/, asy
     throw friendly('Could not determine the node id of the podcast episode being viewed.', 'Open the episode full page before editing it.');
   }
   await this.page.goto(`${this.launchUrl.replace(/\/$/, '')}/node/${nid}/edit`, { waitUntil: 'domcontentloaded' });
-  await smartSettle(this.page, budgetOf(this));
+  await settleForm(this.page, budgetOf(this));
   await assertOnPodcastForm(this.page);
 });
 
@@ -590,11 +629,7 @@ When(/^(?:I |we )*delete the podcast episode I am viewing$/, async function () {
   if (!onDelete) {
     throw friendly(`Expected the node delete confirm form, but got "${this.page.url()}".`);
   }
-  await this.page.evaluate(() => {
-    const el = document.getElementById('edit-submit');
-    if (el) el.click();
-  });
-  await smartSettle(this.page, budgetOf(this));
+  await submitAndSettle(this.page, budgetOf(this));
 });
 
 /**
@@ -616,6 +651,101 @@ Then(/^the podcasts result summary should show a total of (\d+)$/, async functio
   assert.ok(
     re.test(normalized),
     friendly(`Expected the podcasts result summary to report "of ${total}", but it did not.`, 'Check the view result summary (e.g. "Shown articles: 1-12 of 15").')
+  );
+});
+
+/**
+ * Assert the podcasts listing result summary reads a given range, such as
+ * "1-12 of 15", polling until it does.
+ *
+ * Example #1: Then the podcasts result summary should show "1-12 of 15"
+ * Example #2: And the podcasts result summary should show "13-15 of 15"
+ * Example #3: Then the podcasts result summary should show "1-1 of 1"
+ * Example #4: And the podcasts result summary should show "1-12 of 16"
+ * Example #5: Then the podcasts result summary should show "1-3 of 3"
+ */
+Then(/^the podcasts result summary should show "([^"]*)"$/, async function (range) {
+  const summary = this.page.locator(named(this, 'podcasts result summary')).first();
+  const deadline = Date.now() + 10000;
+  let text = '';
+  while (Date.now() < deadline) {
+    text = ((await summary.textContent({ timeout: 1000 }).catch(() => '')) || '').replace(/\s+/g, ' ').trim();
+    if (text.includes(range)) return;
+    await this.page.waitForTimeout(100);
+  }
+  throw friendly(`Expected the podcasts result summary to show "${range}".`, `It reads: "${text || 'nothing'}".`);
+});
+
+/**
+ * Assert how many episode cards the podcasts listing shows, polling until the
+ * count matches.
+ *
+ * Example #1: Then the podcasts listing should show 12 episode cards
+ * Example #2: And the podcasts listing should show 3 episode cards
+ * Example #3: Then the podcasts listing should show 1 episode card
+ * Example #4: And the podcasts listing should show 0 episode cards
+ * Example #5: Then the podcasts listing should show 7 episode cards
+ */
+Then(/^the podcasts listing should show (\d+) episode cards?$/, async function (count) {
+  const cards = this.page.locator(named(this, 'episode card'));
+  const wanted = parseInt(count, 10);
+  const deadline = Date.now() + 10000;
+  let seen = -1;
+  while (Date.now() < deadline) {
+    seen = await cards.count();
+    if (seen === wanted) return;
+    await this.page.waitForTimeout(100);
+  }
+  throw friendly(`Expected the podcasts listing to show ${wanted} episode card(s).`, `It shows ${seen}.`);
+});
+
+/**
+ * Choose a tag in the podcasts listing's tag filter.
+ *
+ * Example #1: When I filter the podcasts by the "Varbase Example Podcast Tag" tag
+ * Example #2: And I filter the podcasts by the "Varbase Example Podcast Tag" tag
+ * Example #3: When we filter the podcasts by the "Technology" tag
+ * Example #4: And we filter the podcasts by the "Education" tag
+ * Example #5: Given I filter the podcasts by the "Health" tag
+ */
+When(/^(?:I |we )*filter the podcasts by the "([^"]*)" tag$/, async function (tag) {
+  const filter = this.page.locator(named(this, 'podcasts tag filter')).first();
+  await filter.selectOption({ label: tag }, { timeout: 10000 }).catch(() => {
+    throw friendly(`The podcasts tag filter offers no "${tag}" tag.`, 'Check the tag exists and is used by a published episode.');
+  });
+  await settleForm(this.page, budgetOf(this));
+});
+
+/**
+ * Assert a form field, found by its label, holds a value.
+ *
+ * Example #1: Then the field "Episode number" should have the value "74501"
+ * Example #2: And the field "Duration" should have the value "44 Mins"
+ * Example #3: Then the field "Title" should have the value "Varbase Example Authoring Episode 74501"
+ * Example #4: And the field "Summary" should have the value "Short summary."
+ * Example #5: Then the field "Episode number" should have the value "7"
+ */
+Then(/^the field "([^"]*)" should have the value "([^"]*)"$/, async function (label, value) {
+  const field = this.page.getByLabel(label, { exact: true }).first();
+  const actual = await field.inputValue({ timeout: 10000 }).catch(() => null);
+  if (actual === null) throw friendly(`No field labelled "${label}" is on this page.`);
+  assert.strictEqual(actual, value, friendly(`The "${label}" field holds "${actual}", not "${value}".`));
+});
+
+/**
+ * Assert the page declares a canonical URL ending in the given path.
+ *
+ * Example #1: Then the canonical URL should end with "/podcasts/varbase-example-podcast-one/varbase-example-episode-01"
+ * Example #2: And the canonical URL should end with "/podcasts/varbase-example-podcast-two"
+ * Example #3: Then the canonical URL should end with "/podcasts/varbase-example-podcast-one"
+ * Example #4: And the canonical URL should end with "/podcasts/varbase-example-podcast-two/varbase-example-episode-13"
+ * Example #5: Then the canonical URL should end with "/podcasts/varbase-example-authoring-podcast"
+ */
+Then(/^the canonical URL should end with "([^"]*)"$/, async function (path) {
+  const hrefs = await this.page.locator('link[rel="canonical"]').evaluateAll((links) => links.map((l) => l.getAttribute('href') || ''));
+  assert.ok(
+    hrefs.some((h) => h.replace(/\/$/, '').endsWith(path)),
+    friendly(`Expected a canonical URL ending in "${path}".`, `The page declares: ${hrefs.join(', ') || 'none'}.`)
   );
 });
 
@@ -789,7 +919,7 @@ When(/^(?:I |we )*upload the audio file "([^"]*)" to the open media library$/, a
     throw friendly(`The media library did not accept "${fileName}".`, 'Check the Audio media type allows this file extension.');
   });
   await save.click();
-  await smartSettle(this.page, budget);
+  await settleForm(this.page, budget);
 
   const insert = this.page.locator(
     '.ui-dialog-buttonpane button:has-text("Insert selected"), .media-library-widget-modal button:has-text("Insert selected")'
@@ -797,7 +927,7 @@ When(/^(?:I |we )*upload the audio file "([^"]*)" to the open media library$/, a
   await insert.waitFor({ state: 'visible', timeout: 30000 });
   await insert.click();
   await this.page.locator(MEDIA_MODAL).first().waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
-  await smartSettle(this.page, budget);
+  await settleForm(this.page, budget);
 
   const mid = await this.page
     .locator('input[name^="field_audio[selection]"][name$="[target_id]"]')
@@ -901,7 +1031,7 @@ When(/^(?:I |we )*regenerate the XML sitemap$/, async function () {
     button.click(),
   ]);
   await this.page.waitForURL((url) => !/\/batch/.test(url.pathname), { timeout: 120000 });
-  await smartSettle(this.page, budgetOf(this));
+  await settleForm(this.page, budgetOf(this));
 });
 
 /**
@@ -919,8 +1049,10 @@ async function purgeEntity(page, base, type, id, budget) {
       : ['media-audio-delete-form', 'media-audio-purge-form', 'media-remote-audio-delete-form', 'media-remote-audio-purge-form'];
     const submit = page.locator(forms.map((id) => `form#${id} #edit-submit`).join(', ')).first();
     if (await submit.count()) {
-      await submit.evaluate((el) => el.click());
-      await smartSettle(page, budget);
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {}),
+        submit.evaluate((el) => el.click()),
+      ]);
     }
   }
 }

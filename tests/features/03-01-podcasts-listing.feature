@@ -8,9 +8,9 @@ Feature: Podcasts Base - Podcasts listing
   Scenario: The podcasts listing shows episode cards, newest first, with a result summary
     Given I am an anonymous user
      When I go to "/podcast-episodes?search=Varbase+Example+Episode"
-     Then I should see "1-12 of 15" in the ".vb-result-summary" element
-      And ".podcast-episode--card" should have a count of 12
-      And "a[href='/podcasts/varbase-example-podcast-one/varbase-example-episode-01']" should be attached
+     Then the podcasts result summary should show "1-12 of 15"
+      And the podcasts listing should show 12 episode cards
+      And the link "Varbase Example Episode 01" with the href "/podcasts/varbase-example-podcast-one/varbase-example-episode-01" should exist
       And the text "Varbase Example Episode 02" should appear after the text "Varbase Example Episode 01"
       And the text "Varbase Example Episode 12" should appear after the text "Varbase Example Episode 11"
       And I should not see "Varbase Example Episode 13"
@@ -20,7 +20,7 @@ Feature: Podcasts Base - Podcasts listing
     Given I am an anonymous user
      When I go to "/podcast-episodes?search=Varbase+Example+Episode"
      Then the field "Search by" should exist
-      And the option "Varbase Example Podcast Tag" should exist within the select element "select[name='industry']"
+      And the field "Industry" should exist
       And I should see "Apply Filter"
 
   @regression @local @development @staging @production
