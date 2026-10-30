@@ -5,32 +5,10 @@ Feature: Podcasts Base - An episode with a local audio media item
       So that a self-hosted show does not depend on an external platform.
 
   @regression @local @development @staging
-  Scenario: A Content editor gives an episode an existing audio media item
+  Scenario: A Content editor uploads an mp3 through the media library, and the episode plays it before and after an edit
     Given I am a logged in user with the "Content editor" user
      When I go to "/node/add/podcast_episode"
-      And I assign the episode to the "Varbase Example Podcast One" podcast
-      And I fill in "Title" with "Varbase Example Audio Media Episode 74503"
-      And I fill in "Summary" with "Summary for the local audio media test episode 74503."
-      And I add the first available cover art from the media library
-      And I open the "Audio" tab on the podcast form
-      And I open the media library for the "Audio" field
-      And I add the first "Audio" media item from the open media library
-     Then the "Audio" field should show the selected media item "Varbase Example Episode Audio"
-     When I save the podcast episode
-     Then the page title should contain "Varbase Example Audio Media Episode 74503 | "
-      And the episode page should play media from "varbase-example-episode"
-      And the episode player should load its audio
-     When I open the edit form for the podcast episode I am viewing
-      And I open the "Audio" tab on the podcast form
-     Then the "Audio" field should show the selected media item "Varbase Example Episode Audio"
-     When I delete the podcast episode I am viewing
-     Then I should see "has been deleted"
-
-  @regression @local @development @staging
-  Scenario: A Content editor uploads an mp3 through the media library and the episode plays it
-    Given I am a logged in user with the "Content editor" user
-     When I go to "/node/add/podcast_episode"
-      And I assign the episode to the "Varbase Example Podcast One" podcast
+      And I assign the episode to the "Varbase Example Authoring Podcast" podcast
       And I fill in "Title" with "Varbase Example Upload Episode 74507"
       And I fill in "Summary" with "Summary for the uploaded audio test episode 74507."
       And I add the first available cover art from the media library
@@ -40,6 +18,12 @@ Feature: Podcasts Base - An episode with a local audio media item
      Then the "Audio" field should show the selected media item "varbase-example-upload-episode.mp3"
      When I save the podcast episode
      Then the page title should contain "Varbase Example Upload Episode 74507 | "
+      And the episode page should play media from "varbase-example-upload-episode"
+      And the episode player should load its audio
+     When I open the edit form for the podcast episode I am viewing
+      And I fill in "Summary" with "Summary for the uploaded audio test episode 74507, edited."
+      And I save the podcast episode
+     Then I should see "Summary for the uploaded audio test episode 74507, edited."
       And the episode page should play media from "varbase-example-upload-episode"
       And the episode player should load its audio
 

@@ -10,10 +10,10 @@ Feature: Podcasts Base - Podcasts listing pager
      When I go to "/podcast-episodes"
       And I fill in "Search by" with "Varbase Example Episode"
       And I press "Apply Filter"
-     Then I should see "1-12 of 15" in the ".vb-result-summary" element
+     Then the podcasts result summary should show "1-12 of 15"
       And I see visible podcasts pager
      When I click podcasts next page link
-     Then I should see "13-15 of 15" in the ".vb-result-summary" element
-      And ".podcast-episode--card" should have a count of 3
+     Then the podcasts result summary should show "13-15 of 15"
+      And the podcasts listing should show 3 episode cards
       And I should see "Varbase Example Episode 15"
       And I should not see "Varbase Example Episode 01"

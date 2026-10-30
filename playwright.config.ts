@@ -24,11 +24,14 @@ interface PlaywrightConfig {
   contextOptions: BrowserContextOptions;
 }
 
+const headless = process.env.HEADLESS !== 'false';
+
 const config: PlaywrightConfig = {
   browser,
   launchOptions: {
-    headless: true,
-    slowMo: 300,
+    headless,
+    // SLOW_MO=0 in CI: a slow-down exists for a human watching, not for a runner.
+    slowMo: Number(process.env.SLOW_MO ?? (headless ? 300 : 800)),
     args: browser === 'chromium' ? chromiumArgs : [],
   },
   contextOptions: {

@@ -14,7 +14,7 @@ Feature: Podcasts Base - Accessibility of the podcasts, a show and an episode
       And every link should have an accessible name
       And every button should have an accessible name
       And every image should have an alt attribute
-      And the element "main" should not violate the accessibility rule "label"
+      And the page should not violate the accessibility rule "label"
       And user zoom should be allowed
 
   @regression @a11y @local @development @staging @production

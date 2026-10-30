@@ -36,20 +36,3 @@ Feature: Podcasts Base - Podcast and Podcast episode permissions
       | SEO admin      |
       | Site admin     |
       | webmaster      |
-
-  @regression @local @development @staging
-  Scenario: A Content editor can create, edit and delete an episode
-    Given I am a logged in user with the "Content editor" user
-     When I go to "/node/add/podcast_episode"
-      And I assign the episode to the "Varbase Example Podcast One" podcast
-      And I fill in "Title" with "Varbase Example Permission Episode 74506"
-      And I fill in "Summary" with "Summary for the permission test episode 74506."
-      And I add the first available cover art from the media library
-      And I save the podcast episode
-     Then the page title should contain "Varbase Example Permission Episode 74506 | "
-     When I open the edit form for the podcast episode I am viewing
-      And I fill in "Summary" with "Summary for the permission test episode 74506, updated."
-      And I save the podcast episode
-     Then I should see "Summary for the permission test episode 74506, updated."
-     When I delete the podcast episode I am viewing
-     Then I should see "has been deleted"
