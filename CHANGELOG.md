@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.4] - 2026-11-12
+### Changed
+- Update Node.js to `>= 24.0` in `package.json` and the GitLab CI
+  ([#3635661](https://www.drupal.org/i/3635661)).
+- Pin the `drupal/varbase_*` dependencies to the released `~1.0.0` and `~4.0.0` lines for the release.
+- Update the version badge to `2.0.4` in `README.md`.
+
 ## [2.0.3] - 2026-10-29
 ### Changed
 - Disable Drupal CMS telemetry in CI ([#3633840](https://www.drupal.org/i/3633840)).
@@ -100,7 +107,8 @@ Sites that already hold `podcast` nodes from 1.0.x are not migrated; stay on
   environment happens to create, so a podcast renders and is indexed the same way
   on every site.
 
-[Unreleased]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.3...2.0.x
+[Unreleased]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.4...2.0.x
+[2.0.4]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.3...2.0.4
 [2.0.3]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.2...2.0.3
 [2.0.2]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.1...2.0.2
 [2.0.1]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.0...2.0.1
