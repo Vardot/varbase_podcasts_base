@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.5] - 2026-11-22
+### Fixed
+- Limit the podcast and podcast episode Cover art field to images and the Tags field
+  to the tags vocabulary
+  ([#3639154](https://git.drupalcode.org/project/varbase_podcasts_base/-/work_items/3639154)).
+
+### Changed
+- Run the GitLab CI on PHP 8.5
+  ([#3639153](https://git.drupalcode.org/project/varbase_podcasts_base/-/work_items/3639153)).
+- Pin the `drupal/varbase_*` dependencies to the released `~1.0.0` and `~4.0.0` lines for the release.
+- Update the version badge to `2.0.5` in `README.md`.
+
 ## [2.0.4] - 2026-11-12
 ### Changed
 - Update Node.js to `>= 24.0` in `package.json` and the GitLab CI
@@ -107,7 +119,8 @@ Sites that already hold `podcast` nodes from 1.0.x are not migrated; stay on
   environment happens to create, so a podcast renders and is indexed the same way
   on every site.
 
-[Unreleased]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.4...2.0.x
+[Unreleased]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.5...2.0.x
+[2.0.5]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.4...2.0.5
 [2.0.4]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.3...2.0.4
 [2.0.3]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.2...2.0.3
 [2.0.2]: https://git.drupalcode.org/project/varbase_podcasts_base/-/compare/2.0.1...2.0.2
