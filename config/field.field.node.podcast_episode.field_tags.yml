@@ -4,6 +4,7 @@ dependencies:
   config:
     - field.storage.node.field_tags
     - node.type.podcast_episode
+    - taxonomy.vocabulary.tags
 id: node.podcast_episode.field_tags
 field_name: field_tags
 entity_type: node
@@ -16,6 +17,13 @@ default_value: {  }
 default_value_callback: ''
 settings:
   handler: 'default:filter_existing_terms'
-  handler_settings: {  }
+  handler_settings:
+    target_bundles:
+      tags: tags
+    sort:
+      field: name
+      direction: ASC
+    auto_create: true
+    auto_create_bundle: ''
 field_type: entity_reference
 
